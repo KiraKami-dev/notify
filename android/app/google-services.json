@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "539954131484",
+    "project_id": "notifyuh",
+    "storage_bucket": "notifyuh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:539954131484:android:3cc0805813e7d117cae5d9",
+        "android_client_info": {
+          "package_name": "com.example.notify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvLTQ4ZUKfOjn84a2JKV5e5OS0Ixo8pL8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
