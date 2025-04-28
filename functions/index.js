@@ -9,20 +9,19 @@ exports.sendNotification = onRequest(async (request, response) => {
 
   // Check if the token and message content are provided
   if (!token || !title || !body) {
-    return response.status(400).send("Missing required fields: token, title, or body");
+    return response.status(400).send("Missing fields: token, title, or body");
   }
 
   // Prepare the message payload
   const message = {
     notification: {
       title: title,
-      body: body
+      body: body,
     },
-    token: token // The FCM token of the device you want to send the notification to
+    token: token,
   };
 
   try {
-    // Send the notification
     const responseFCM = await admin.messaging().send(message);
     logger.info("Notification sent successfully", {response: responseFCM});
     response.status(200).send("Notification sent successfully");
