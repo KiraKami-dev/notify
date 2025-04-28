@@ -60,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // The Cloud Function URL - replace with your function's URL
     final url = Uri.parse(
-      'https://sendnotification-pjkmgzabia-uc.a.run.app/sendNotification',
+      'https://sendnotification-pjkmgzabia-uc.a.run.app',
     );
 
     try {
