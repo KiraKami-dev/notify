@@ -4,13 +4,14 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'connection_modal.dart'; // Import the ConnectionModal
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   await messaging.requestPermission();
-  _getFCMToken();
+  await _getFCMToken();
 
   runApp(const MyApp());
 }
@@ -40,7 +41,12 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _bodyController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
 
-  
+  // Method to show the connection modal
+  void _showConnectionModal() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => ConnectionModal()));
+  }
 
   // Send notification by calling the Firebase Cloud Function
   Future<void> _sendNotification() async {
@@ -59,9 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     // The Cloud Function URL - replace with your function's URL
-    final url = Uri.parse(
-      'https://sendnotification-pjkmgzabia-uc.a.run.app',
-    );
+    final url = Uri.parse('https://sendnotification-pjkmgzabia-uc.a.run.app');
 
     try {
       final response = await http.post(
@@ -94,7 +98,17 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('FCM Token Demo')),
+      appBar: AppBar(
+        title: Text('FCM Token Demo'),
+        actions: [
+          // Add a button to navigate to the connection modal
+          IconButton(
+            icon: Icon(Icons.connect_without_contact),
+            onPressed: _showConnectionModal,
+            tooltip: 'Connect',
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -140,32 +154,31 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+// Top-level function
 Future<void> _getFCMToken() async {
-    // Get FCM token
-    String? token = await FirebaseMessaging.instance.getToken();
+  // Get FCM token
+  String? token = await FirebaseMessaging.instance.getToken();
 
-    if (token != null) {
-      print("FCM Token: $token");
+  if (token != null) {
+    print("FCM Token: $token");
 
-      // Store the token in Firestore
-      _storeTokenInFirestore(token);
-    }
+    // Store the token in Firestore
+    _storeTokenInFirestore(token);
   }
+}
 
-  // Store the token in Firestore with token as document ID
-  Future<void> _storeTokenInFirestore(String token) async {
-    try {
-      final tokenCollectionRef = FirebaseFirestore.instance.collection(
-        'tokens',
-      );
+// Store the token in Firestore with token as document ID
+Future<void> _storeTokenInFirestore(String token) async {
+  try {
+    final tokenCollectionRef = FirebaseFirestore.instance.collection('tokens');
 
-      await tokenCollectionRef.doc(token).set({
-        'token_id': token,
-        'timestamp': Timestamp.now(),
-      });
+    await tokenCollectionRef.doc(token).set({
+      'token_id': token,
+      'timestamp': Timestamp.now(),
+    });
 
-      print('Token stored successfully in Firestore');
-    } catch (e) {
-      print('Error storing token in Firestore: $e');
-    }
+    print('Token stored successfully in Firestore');
+  } catch (e) {
+    print('Error storing token in Firestore: $e');
   }
+}
