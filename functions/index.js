@@ -5,7 +5,7 @@ const logger = require("firebase-functions/logger");
 admin.initializeApp();
 
 exports.sendNotification = onRequest(async (request, response) => {
-  const {token, title, body} = request.body;
+  const {token, title, body, image} = request.body;
 
   // Check if the token and message content are provided
   if (!token || !title || !body) {
@@ -17,6 +17,9 @@ exports.sendNotification = onRequest(async (request, response) => {
     notification: {
       title: title,
       body: body,
+      image: image,
+    }, data: {
+      image,
     },
     token: token,
   };

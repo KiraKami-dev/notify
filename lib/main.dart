@@ -4,15 +4,22 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'connection_modal.dart';
+import 'package:notify/config/const_variables.dart';
+import 'package:notify/data/local_notification/notification_service.dart';
+import 'presentation/connection_modal.dart';
 
 // Firebase Cloud Function URL
-const String NOTIFICATION_API_URL = 'https://sendnotification-pjkmgzabia-uc.a.run.app';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await _initializeFirebaseMessaging();
+    await NotificationService.init();
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    NotificationService.showForegroundNotification(message);
+  });
   runApp(const NotifyApp());
 }
 
@@ -166,12 +173,13 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
 
     try {
       final response = await http.post(
-        Uri.parse(NOTIFICATION_API_URL),
+        Uri.parse(notificaiotnApiUrl),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'token': tokenId,
           'title': title,
           'body': message,
+          'image': 'https://firebasestorage.googleapis.com/v0/b/notifyuh.firebasestorage.app/o/assets%2Fhi_girl.jpg?alt=media&token=a1a45942-5dd7-43a8-9563-a83ede569144',
         }),
       );
 

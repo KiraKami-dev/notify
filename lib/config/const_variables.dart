@@ -1,0 +1,1 @@
+const String notificaiotnApiUrl = 'https://sendnotification-pjkmgzabia-uc.a.run.app';
