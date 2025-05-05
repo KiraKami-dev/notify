@@ -56,8 +56,8 @@ class NotifyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.pinkAccent,
-          secondary: Colors.purpleAccent,
+          seedColor: Colors.purpleAccent,
+          secondary: Colors.deepPurpleAccent,
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -88,8 +88,8 @@ class NotifyApp extends StatelessWidget {
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.pinkAccent,
-          secondary: Colors.purpleAccent,
+          seedColor: Colors.purpleAccent,
+          secondary: Colors.deepPurpleAccent,
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
