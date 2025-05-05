@@ -39,7 +39,7 @@ Future<void> _storeTokenInFirestore(String token) async {
     await FirebaseFirestore.instance.collection('tokens').doc(token).set({
       'token_id': token,
       'timestamp': Timestamp.now(),
-    });
+    }, SetOptions(merge: true));
     print('Token stored successfully in Firestore');
   } catch (e) {
     print('Error storing token in Firestore: $e');
