@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
 
-
-
 class UserConnectionModal extends StatefulWidget {
   final String mainTokenId;
   final Function(String partnerCode) onConnect;
@@ -21,7 +19,7 @@ class UserConnectionModal extends StatefulWidget {
 class _UserConnectionModalState extends State<UserConnectionModal>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _activeTab = 0; 
+  int _activeTab = 0;
   final TextEditingController _codeController = TextEditingController();
   late String _generatedCode;
   bool _isSecureConnection = true;
@@ -39,7 +37,6 @@ class _UserConnectionModalState extends State<UserConnectionModal>
       }
     });
 
-    
     _generateUniqueCode();
   }
 
@@ -61,95 +58,149 @@ class _UserConnectionModalState extends State<UserConnectionModal>
 
   @override
   @override
-Widget build(BuildContext context) {
-  final theme = Theme.of(context);
-  final colorScheme = theme.colorScheme;
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-  return Dialog(
-    insetPadding: const EdgeInsets.all(16),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    // backgroundColor: colorScheme.surface,
-    child: SizedBox(
-      height: 600,
-      child: Column(
-        children: [
-          
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Connect with Partner',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      // backgroundColor: colorScheme.surface,
+      child: SizedBox(
+        height: 740,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Connect with Partner',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.help_outline, color: colorScheme.onSurface),
-                      onPressed: () => _showHelpDialog(context),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, color: colorScheme.onSurface),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ],
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.help_outline,
+                          color: colorScheme.onSurface,
+                        ),
+                        onPressed: () => _showHelpDialog(context),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close, color: colorScheme.onSurface),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Tab bar and content
-          Expanded(
-            child: SafeArea(
+            SizedBox(height: 16),
+
+            // Tab bar and content
+            Expanded(
               child: Column(
                 children: [
+                  // Custom tab switcher
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceVariant.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicator: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        color: colorScheme.surface,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      labelColor: colorScheme.primary,
-                      unselectedLabelColor: colorScheme.onSurfaceVariant,
-                      tabs: const [
-                        Tab(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'Enter Code',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _activeTab = 0;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color:
+                                    _activeTab == 0
+                                        ? colorScheme.surface
+                                        : Colors.transparent,
+                                borderRadius: BorderRadius.circular(30),
+                                boxShadow:
+                                    _activeTab == 0
+                                        ? [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.1,
+                                            ),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                        : [],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Enter Code',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        _activeTab == 0
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                        Tab(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'Share Code',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _activeTab = 1;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color:
+                                    _activeTab == 1
+                                        ? colorScheme.surface
+                                        : Colors.transparent,
+                                borderRadius: BorderRadius.circular(30),
+                                boxShadow:
+                                    _activeTab == 1
+                                        ? [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.1,
+                                            ),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                        : [],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Share Code',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        _activeTab == 1
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -157,112 +208,113 @@ Widget build(BuildContext context) {
                       ],
                     ),
                   ),
+
+                  // Dynamic content
                   Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildEnterCodeTab(colorScheme),
-                        _buildShareCodeTab(colorScheme),
-                      ],
-                    ),
+                    child:
+                        _activeTab == 0
+                            ? _buildEnterCodeTab(colorScheme)
+                            : _buildShareCodeTab(colorScheme),
                   ),
                 ],
               ),
             ),
-          ),
 
-          // Bottom actions (formerly bottomNavigationBar)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                            if (_activeTab == 0) {
-                              _connectWithPartner();
-                            } else {
-                              _refreshCode();
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            _activeTab == 0 ? 'Connect' : 'Generate New Code',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
+            // Bottom actions (formerly bottomNavigationBar)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Having trouble?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurfaceVariant,
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () {
+                                if (_activeTab == 0) {
+                                  _connectWithPartner();
+                                } else {
+                                  _refreshCode();
+                                }
+                              },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
                       ),
+                      child:
+                          _isLoading
+                              ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Text(
+                                _activeTab == 0
+                                    ? 'Connect'
+                                    : 'Generate New Code',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                     ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () {
-                        _showTroubleshootingDialog(context);
-                      },
-                      child: Text(
-                        'Get help',
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Having trouble?',
                         style: TextStyle(
                           fontSize: 14,
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          _showTroubleshootingDialog(context);
+                        },
+                        child: Text(
+                          'Get help',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
-  
+    );
+  }
 
   Widget _buildEnterCodeTab(ColorScheme colorScheme) {
     return Padding(
@@ -462,22 +514,22 @@ Widget build(BuildContext context) {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // QR Code (placeholder)
-                  Container(
-                    width: 160,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceVariant,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.qr_code_2,
-                        size: 100,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  // Container(
+                  //   width: 160,
+                  //   height: 160,
+                  //   decoration: BoxDecoration(
+                  //     color: colorScheme.surfaceVariant,
+                  //     borderRadius: BorderRadius.circular(16),
+                  //   ),
+                  //   child: Center(
+                  //     child: Icon(
+                  //       Icons.qr_code_2,
+                  //       size: 100,
+                  //       color: colorScheme.onSurfaceVariant,
+                  //     ),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 24),
 
                   // Connection code
                   Text(
@@ -531,16 +583,16 @@ Widget build(BuildContext context) {
                   const SizedBox(height: 24),
 
                   // Share options
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildShareOption(Icons.message, 'SMS', colorScheme),
-                      const SizedBox(width: 16),
-                      _buildShareOption(Icons.email, 'Email', colorScheme),
-                      const SizedBox(width: 16),
-                      _buildShareOption(Icons.more_horiz, 'More', colorScheme),
-                    ],
-                  ),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     _buildShareOption(Icons.message, 'SMS', colorScheme),
+                  //     const SizedBox(width: 16),
+                  //     _buildShareOption(Icons.email, 'Email', colorScheme),
+                  //     const SizedBox(width: 16),
+                  //     _buildShareOption(Icons.more_horiz, 'More', colorScheme),
+                  //   ],
+                  // ),
                 ],
               ),
             ),
@@ -911,4 +963,3 @@ Widget build(BuildContext context) {
     );
   }
 }
-

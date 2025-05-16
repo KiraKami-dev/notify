@@ -1,8 +1,8 @@
 class ConnectionStatus {
   final bool connectedStatus;
+  final String mainTokenId;
   final String mainLastTimestamp;
   final String mainOnlineStatus;
-  final String mainTokenId;
   final String secondaryLastTimestamp;
   final String secondaryOnlineStatus;
   final String secondaryTokenId;
