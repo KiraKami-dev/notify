@@ -6,16 +6,15 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:notify/config/const_variables.dart';
 import 'package:notify/data/local_notification/notification_service.dart';
-import 'presentation/connection_modal.dart';
+import 'presentation/connection_dialog.dart';
 
 // Firebase Cloud Function URL
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await _initializeFirebaseMessaging();
-    await NotificationService.init();
+  await NotificationService.init();
 
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     NotificationService.showForegroundNotification(message);
@@ -27,11 +26,11 @@ Future<void> _initializeFirebaseMessaging() async {
   final messaging = FirebaseMessaging.instance;
   await messaging.requestPermission();
   final token = await messaging.getToken();
-  
-  if (token != null) {
-    print("FCM Token: $token");
-    await _storeTokenInFirestore(token);
-  }
+
+  // if (token != null) {
+  //   print("FCM Token: $token");
+  //   await _storeTokenInFirestore(token);
+  // }
 }
 
 Future<void> _storeTokenInFirestore(String token) async {
@@ -76,10 +75,7 @@ class NotifyApp extends StatelessWidget {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 16,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -127,9 +123,9 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
     // This would normally load from your database
     // For now, we'll just simulate a delay
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     // In a real app, you'd fetch this from Firestore or your backend
-      setState(() {
+    setState(() {
       _partnerName = null; // Set to null if no partner connected yet
       _partnerToken = null;
     });
@@ -141,25 +137,6 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
     _titleController.dispose();
     _messageController.dispose();
     super.dispose();
-  }
-
-  void _showConnectionModal() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => UserConnectionModal(
-          userId: 'current_user', // Replace with actual user ID
-          onConnect: (partnerCode) {
-            // Handle connection logic
-            setState(() {
-              _partnerName = "Alex"; // This would come from your backend
-              _partnerToken = partnerCode;
-              _tokenController.text = partnerCode;
-            });
-            _showSnackBar('Connected with Alex!', Colors.green);
-          },
-        ),
-      ),
-    );
   }
 
   Future<void> _sendMessage() async {
@@ -179,7 +156,8 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
           'token': tokenId,
           'title': title,
           'body': message,
-          'image': 'https://firebasestorage.googleapis.com/v0/b/notifyuh.firebasestorage.app/o/assets%2Fhi_girl.jpg?alt=media&token=a1a45942-5dd7-43a8-9563-a83ede569144',
+          'image':
+              'https://firebasestorage.googleapis.com/v0/b/notifyuh.firebasestorage.app/o/assets%2Fhi_girl.jpg?alt=media&token=a1a45942-5dd7-43a8-9563-a83ede569144',
         }),
       );
 
@@ -187,7 +165,7 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
         _showSnackBar('Message sent successfully!', Colors.green);
         _titleController.clear();
         _messageController.clear();
-        
+
         // In a real app, you'd also save this message to Firestore
         // to maintain message history
       } else {
@@ -216,16 +194,35 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Connect', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Connect',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add),
-            onPressed: _showConnectionModal,
+            onPressed: () {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder:
+                    (context) => UserConnectionModal(
+                      mainTokenId: "",
+                      onConnect: (partnerCode) {
+                        // handle connection logic
+                        print('Connected with: $partnerCode');
+                        Navigator.of(
+                          context,
+                        ).pop(); // Close the dialog after connecting
+                      },
+                    ),
+              );
+            },
             tooltip: 'Connect with someone',
           ),
         ],
@@ -253,8 +250,7 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
                     return null;
                   },
                 ),
-              if (_partnerToken == null)
-                const SizedBox(height: 16),
+              if (_partnerToken == null) const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -289,13 +285,14 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _sendMessage,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send),
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.send),
                 label: Text(_isLoading ? 'Sending...' : 'Send Message'),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 56),
@@ -349,7 +346,9 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
                   Text(
                     'Send them a message!',
                     style: TextStyle(
-                      color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
+                      color: theme.colorScheme.onPrimaryContainer.withOpacity(
+                        0.8,
+                      ),
                     ),
                   ),
                 ],
@@ -367,11 +366,7 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
         ),
         child: Column(
           children: [
-            const Icon(
-              Icons.people_outline,
-              size: 48,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.people_outline, size: 48, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
               'Not connected yet',
@@ -391,7 +386,23 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: _showConnectionModal,
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder:
+                      (context) => UserConnectionModal(
+                        mainTokenId: "",
+                        onConnect: (partnerCode) {
+                          // handle connection logic
+                          print('Connected with: $partnerCode');
+                          Navigator.of(
+                            context,
+                          ).pop(); // Close the dialog after connecting
+                        },
+                      ),
+                );
+              },
               icon: const Icon(Icons.person_add),
               label: const Text('Connect Now'),
               style: OutlinedButton.styleFrom(
