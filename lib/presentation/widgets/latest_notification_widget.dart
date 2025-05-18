@@ -4,6 +4,7 @@ import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
+import 'package:notify/presentation/notification/notification_detail_page.dart';
 
 class LatestNotificationsWidget extends ConsumerStatefulWidget {
   final String userId;
@@ -66,96 +67,106 @@ class _LatestNotificationsWidgetState
   }
 
   Widget _buildNotificationItem(NotificationModel notif, ThemeData theme, String timeFormatted) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              if (notif.stickerUrl.isNotEmpty)
-                Container(
-                  width: 75,
-                  height: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(12),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NotificationDetailPage(userId: widget.userId),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                if (notif.stickerUrl.isNotEmpty)
+                  Container(
+                    width: 75,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(12),
+                      ),
+                      image: DecorationImage(
+                        image: NetworkImage(notif.stickerUrl),
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    image: DecorationImage(
-                      image: NetworkImage(notif.stickerUrl),
-                      fit: BoxFit.cover,
+                  )
+                else
+                  Container(
+                    width: 75,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(12),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.notifications,
+                      size: 32,
+                      color: Colors.grey,
                     ),
                   ),
-                )
-              else
-                Container(
-                  width: 75,
-                  height: double.infinity,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
-                    borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          notif.messageTitle,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          notif.messageBody,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 14,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                  ),
-                  child: const Icon(
-                    Icons.notifications,
-                    size: 32,
-                    color: Colors.grey,
                   ),
                 ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        notif.messageTitle,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                        timeFormatted,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        notif.messageBody,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 6),
+                      sentRecvIcon(
+                        myType: myType,
+                        sentBy: notif.sentBy,
+                        theme: theme,
                       ),
                     ],
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      timeFormatted,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    sentRecvIcon(
-                      myType: myType,
-                      sentBy: notif.sentBy,
-                      theme: theme,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
