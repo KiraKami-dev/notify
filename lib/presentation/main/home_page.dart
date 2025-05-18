@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:notify/config/const_variables.dart';
 import 'package:notify/data/firebase/firebase_connect.dart';
+import 'package:notify/data/firebase/firebase_notification.dart';
 import 'package:notify/data/firebase/firebase_stickers.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/domain/sticker_model.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:notify/presentation/widgets/latest_notification_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -25,59 +27,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   bool _isLoading = false;
   String? _partnerStatus;
   String? _partnerToken;
+  String generatedCode = "";
+  String myType = "";
   int _currentImageIndex = 0;
   bool _showFavoritesOnly = false;
   bool connectedStatus = false;
   List<Sticker> stickerItems = [];
-
-  // Sample data - Replace with your actual data
-  final List<Map<String, dynamic>> _notifications = [
-    {
-      'image': 'https://picsum.photos/id/237/200/300',
-      'title': 'Good Morning!',
-      'message': 'Have a great day ahead!',
-      'time': '8:00 AM',
-      'sender': 'You',
-      'isFavorite': true,
-    },
-    {
-      'image': 'https://picsum.photos/id/238/200/300',
-      'title': 'Meeting Reminder',
-      'message': 'Team meeting at 2 PM',
-      'time': '1:30 PM',
-      'sender': 'Partner',
-      'isFavorite': false,
-    },
-    {
-      'image': 'https://picsum.photos/id/239/200/300',
-      'title': 'Lunch Break',
-      'message': 'Time for a healthy lunch!',
-      'time': '12:00 PM',
-      'sender': 'You',
-      'isFavorite': true,
-    },
-  ];
-
-  // [
-  //   {
-  //     'image': 'https://picsum.photos/id/237/200/300',
-  //     'title': 'Good Morning!',
-  //     'message': 'Have a great day ahead!',
-  //     'isFavorite': false,
-  //   },
-  //   {
-  //     'image': 'https://picsum.photos/id/238/200/300',
-  //     'title': 'Meeting Reminder',
-  //     'message': 'Team meeting at 2 PM',
-  //     'isFavorite': false,
-  //   },
-  //   {
-  //     'image': 'https://picsum.photos/id/239/200/300',
-  //     'title': 'Lunch Break',
-  //     'message': 'Time for a healthy lunch!',
-  //     'isFavorite': false,
-  //   },
-  // ];
 
   @override
   void initState() {
@@ -103,16 +58,17 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       if (checkCode) {
         connectedStatus = tempConnectionStatus;
+        generatedCode = code;
       } else {
         connectedStatus = false;
       }
     }
 
     if (connectedStatus) {
-      String typeUser = ref.read(getTypeUserProvider);
+      myType = ref.read(getTypeUserProvider);
       String? partnerToken = await FirebaseConnect.fetchPartnerToken(
         code: code,
-        typeUser: typeUser,
+        typeUser: myType,
       );
       if (partnerToken != null || partnerToken != '') {
         _partnerToken = partnerToken;
@@ -167,6 +123,14 @@ class _HomePageState extends ConsumerState<HomePage> {
       );
 
       if (response.statusCode == 200) {
+        await FirebaseNotifications.addNotification(
+          targetUserId: generatedCode, 
+          title: title,
+          body: message,
+          stickerId: stickerItems[_currentImageIndex].id,
+          stickerUrl: stickerItems[_currentImageIndex].url,
+          sentBy: myType,
+        );
         _showSnackBar('Message sent successfully!', Colors.green);
       } else {
         throw 'Server returned status code: ${response.statusCode}';
@@ -289,118 +253,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             padding: const EdgeInsets.all(8),
             child: Column(
               children: [
-                // Recent Notifications Section
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Today', style: theme.textTheme.titleMedium),
-                          ],
-                        ),
-                      ),
-                      ...List.generate(
-                        2,
-                        (index) => Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceVariant,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: IntrinsicHeight(
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 80,
-                                    height: double.infinity,
-                                    decoration: BoxDecoration(
-                                      borderRadius:
-                                          const BorderRadius.horizontal(
-                                            left: Radius.circular(12),
-                                          ),
-                                      image: DecorationImage(
-                                        image: NetworkImage(
-                                          _notifications[index]['image'],
-                                        ),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            _notifications[index]['title'],
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            _notifications[index]['message'],
-                                            style: theme.textTheme.bodyMedium,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceAround,
-                                      children: [
-                                        Text(
-                                          _notifications[index]['time'],
-                                          style: theme.textTheme.bodySmall,
-                                        ),
-                                        Text(
-                                          _notifications[index]['sender'],
-                                          style: TextStyle(
-                                            color: theme.colorScheme.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                LatestNotificationsWidget(userId: generatedCode),
 
                 const SizedBox(height: 4),
 

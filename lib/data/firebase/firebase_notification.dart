@@ -17,4 +17,31 @@ class FirebaseNotifications {
                   .toList(),
         );
   }
+
+  static Future<void> addNotification({
+    required String targetUserId,
+    required String title,
+    required String body,
+    required String stickerId,
+    required String stickerUrl,
+    required String sentBy,
+  }) async {
+    final now = Timestamp.now();
+    final notifDoc =
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(targetUserId)
+            .collection('notifications')
+            .doc();
+
+    await notifDoc.set({
+      'message_title': title,
+      'message_body': body,
+      'notification_id': notifDoc.id,
+      'sentBy': sentBy,
+      'sticker_id': stickerId,
+      'sticker_url': stickerUrl,
+      'timeStamp': now,
+    });
+  }
 }

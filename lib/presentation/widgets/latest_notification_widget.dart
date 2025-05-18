@@ -1,17 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:notify/data/local_storage/shared_auth.dart';
 
-class LatestNotificationsWidget extends StatefulWidget {
+class LatestNotificationsWidget extends ConsumerStatefulWidget {
   final String userId;
 
-  const LatestNotificationsWidget({required this.userId, Key? key}) : super(key: key);
+  const LatestNotificationsWidget({required this.userId, super.key});
 
   @override
-  State<LatestNotificationsWidget> createState() => _LatestNotificationsWidgetState();
+  ConsumerState<ConsumerStatefulWidget> createState() =>
+      _LatestNotificationsWidgetState();
 }
 
-class _LatestNotificationsWidgetState extends State<LatestNotificationsWidget> {
+class _LatestNotificationsWidgetState
+    extends ConsumerState<LatestNotificationsWidget> {
   List<NotificationModel> oldNotifications = [];
 
   String getDayLabel(DateTime date) {
@@ -25,10 +30,45 @@ class _LatestNotificationsWidgetState extends State<LatestNotificationsWidget> {
     return DateFormat('d MMM yyyy').format(date);
   }
 
+  String myType = "";
+  @override
+  void initState() {
+    super.initState();
+    getMyType();
+  }
+
+  void getMyType() {
+    myType = ref.read(getTypeUserProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    // 1️⃣ Bail out quickly if userId is still blank / null
+    if (widget.userId.isEmpty) {
+      return Container(
+        // you can replace with SizedBox.shrink()
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            'Loading notifications…',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      );
+    }
     return StreamBuilder<List<NotificationModel>>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -37,8 +77,12 @@ class _LatestNotificationsWidgetState extends State<LatestNotificationsWidget> {
           .orderBy('timeStamp', descending: true)
           .limit(2)
           .snapshots()
-          .map((snapshot) =>
-              snapshot.docs.map((doc) => NotificationModel.fromDoc(doc)).toList()),
+          .map(
+            (snapshot) =>
+                snapshot.docs
+                    .map((doc) => NotificationModel.fromDoc(doc))
+                    .toList(),
+          ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -66,9 +110,18 @@ class _LatestNotificationsWidgetState extends State<LatestNotificationsWidget> {
               ],
             ),
             child: Center(
-              child: Text(
-                'No notifications yet',
-                style: theme.textTheme.titleMedium,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Icon(
+                    IconlyLight.notification,
+                    color: theme.colorScheme.primary,
+                  ),
+                  Text(
+                    'Send your first notification! ',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ],
               ),
             ),
           );
@@ -104,98 +157,108 @@ class _LatestNotificationsWidgetState extends State<LatestNotificationsWidget> {
                     ],
                   ),
                 ),
-                ...List.generate(
-                  notifications.length,
-                  (index) {
-                    final notif = notifications[index];
-                    final timeFormatted = DateFormat.jm().format(notif.timeStamp.toDate());
+                ...List.generate(notifications.length, (index) {
+                  final notif = notifications[index];
+                  final timeFormatted = DateFormat.jm().format(
+                    notif.timeStamp.toDate(),
+                  );
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IntrinsicHeight(
-                          child: Row(
-                            children: [
-                              if (notif.stickerUrl.isNotEmpty)
-                                Container(
-                                  width: 80,
-                                  height: double.infinity,
-                                  decoration: BoxDecoration(
-                                    borderRadius: const BorderRadius.horizontal(
-                                      left: Radius.circular(12),
-                                    ),
-                                    image: DecorationImage(
-                                      image: NetworkImage(notif.stickerUrl),
-                                      fit: BoxFit.cover,
-                                    ),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          children: [
+                            if (notif.stickerUrl.isNotEmpty)
+                              Container(
+                                width: 80,
+                                height: double.infinity,
+                                decoration: BoxDecoration(
+                                  borderRadius: const BorderRadius.horizontal(
+                                    left: Radius.circular(12),
                                   ),
-                                )
-                              else
-                                Container(
-                                  width: 80,
-                                  height: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary.withOpacity(0.1),
-                                    borderRadius: const BorderRadius.horizontal(
-                                      left: Radius.circular(12),
-                                    ),
+                                  image: DecorationImage(
+                                    image: NetworkImage(notif.stickerUrl),
+                                    fit: BoxFit.cover,
                                   ),
-                                  child: const Icon(Icons.notifications, size: 40, color: Colors.grey),
                                 ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        notif.messageTitle,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        notif.messageBody,
-                                        style: theme.textTheme.bodyMedium,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
+                              )
+                            else
+                              Container(
+                                width: 80,
+                                height: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.1,
                                   ),
+                                  borderRadius: const BorderRadius.horizontal(
+                                    left: Radius.circular(12),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.notifications,
+                                  size: 40,
+                                  color: Colors.grey,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    const SizedBox(height: 4),
                                     Text(
-                                      timeFormatted,
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                    Text(
-                                      notif.sentBy,
-                                      style: TextStyle(
-                                        color: theme.colorScheme.primary,
+                                      notif.messageTitle,
+                                      style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      notif.messageBody,
+                                      style: theme.textTheme.bodyMedium,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  Text(
+                                    timeFormatted,
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(2.0),
+                                    child: sentRecvIcon(
+                                      myType: myType,
+                                      sentBy: notif.sentBy,
+                                      theme: theme,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -236,4 +299,21 @@ class NotificationModel {
       timeStamp: data['timeStamp'] ?? Timestamp.now(),
     );
   }
+}
+
+Widget sentRecvIcon({
+  required String myType,
+  required String sentBy,
+  required ThemeData theme,
+}) {
+  final iSent = sentBy == myType;
+
+  return Icon(
+    iSent
+        ? Icons.south_west
+        : Icons.north_east, 
+    size: 20,
+    color: iSent ? Colors.green : Colors.blueGrey,
+
+  );
 }
