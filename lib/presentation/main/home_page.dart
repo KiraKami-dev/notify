@@ -2,16 +2,19 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:notify/config/const_variables.dart';
+import 'package:notify/data/firebase/firebase_connect.dart';
+import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   final _formKey = GlobalKey<FormState>();
   final _tokenController = TextEditingController();
   final _titleController = TextEditingController();
@@ -22,6 +25,7 @@ class _HomePageState extends State<HomePage> {
   String? _partnerToken;
   int _currentImageIndex = 0;
   bool _showFavoritesOnly = false;
+  bool connectedStatus = false;
 
   // Sample data - Replace with your actual data
   final List<Map<String, dynamic>> _notifications = [
@@ -30,7 +34,7 @@ class _HomePageState extends State<HomePage> {
       'title': 'Good Morning!',
       'message': 'Have a great day ahead!',
       'time': '8:00 AM',
-      'sender': 'Alice',
+      'sender': 'You',
       'isFavorite': true,
     },
     {
@@ -38,7 +42,7 @@ class _HomePageState extends State<HomePage> {
       'title': 'Meeting Reminder',
       'message': 'Team meeting at 2 PM',
       'time': '1:30 PM',
-      'sender': 'Bob',
+      'sender': 'Partner',
       'isFavorite': false,
     },
     {
@@ -46,7 +50,7 @@ class _HomePageState extends State<HomePage> {
       'title': 'Lunch Break',
       'message': 'Time for a healthy lunch!',
       'time': '12:00 PM',
-      'sender': 'Charlie',
+      'sender': 'You',
       'isFavorite': true,
     },
   ];
@@ -93,11 +97,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadPartnerInfo() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _partnerStatus = null;
-      _partnerToken = null;
-    });
+    connectedStatus = ref.read(getConnectedStatusProvider);
+    if (connectedStatus) {
+      String code = ref.read(getGeneratedCodeProvider);
+      String typeUser = ref.read(getTypeUserProvider);
+      String? partnerToken = await FirebaseConnect.fetchPartnerToken(
+        code: code,
+        typeUser: typeUser,
+      );
+      if (partnerToken != null || partnerToken != '') {
+        _partnerToken = partnerToken;
+      }
+    }
+
+    setState(() {});
   }
 
   @override
@@ -109,19 +122,11 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _toggleFavorite(int index) {
-    setState(() {
-      _notifications[index]['isFavorite'] =
-          !_notifications[index]['isFavorite'];
-    });
-  }
-
   Future<void> _sendMessage() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    final tokenId = _tokenController.text.trim();
     final title = _titleController.text.trim();
     final message = _messageController.text.trim();
 
@@ -130,7 +135,7 @@ class _HomePageState extends State<HomePage> {
         Uri.parse(notificaiotnApiUrl),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'token': tokenId,
+          'token': _partnerToken,
           'title': title,
           'body': message,
           'image': _carouselItems[_currentImageIndex]['image'],
@@ -139,13 +144,10 @@ class _HomePageState extends State<HomePage> {
 
       if (response.statusCode == 200) {
         _showSnackBar('Message sent successfully!', Colors.green);
-        _titleController.clear();
-        _messageController.clear();
       } else {
         throw 'Server returned status code: ${response.statusCode}';
       }
     } catch (error) {
-      print('Error sending message: $error');
       _showSnackBar('Failed to send message', Colors.red);
     } finally {
       setState(() => _isLoading = false);
@@ -181,20 +183,21 @@ class _HomePageState extends State<HomePage> {
         centerTitle: false,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person_add),
-            onPressed: () {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => UserConnectionModal(),
-              );
-            },
-            tooltip: 'Connect with someone',
-          ),
+          if (!connectedStatus)
+            IconButton(
+              icon: const Icon(Icons.person_add),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => UserConnectionModal(),
+                );
+              },
+              tooltip: 'Connect with someone',
+            ),
         ],
       ),
-      drawer: Drawer(
+      endDrawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -561,7 +564,24 @@ class _HomePageState extends State<HomePage> {
 
                 // Send Button
                 ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _sendMessage,
+                  onPressed:
+                      _isLoading || connectedStatus == false
+                          ? () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                  'Please connect with user first!',
+                                ),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                margin: const EdgeInsets.all(16),
+                              ),
+                            );
+                          }
+                          : _sendMessage,
                   icon:
                       _isLoading
                           ? const SizedBox(

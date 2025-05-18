@@ -922,6 +922,8 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
             margin: const EdgeInsets.all(16),
           ),
         );
+
+        ref.read(setGeneratedCodeProvider(generatedCode: code));
         ref.read(setConnectedStatusProvider(status: true));
 
         ref.read(

@@ -93,36 +93,51 @@ class FirebaseConnect {
   }
 
   static Future<bool> updateSecondaryPresenceIfOffline({
-  required String partnerCode,
-  required String tokenId,
-}) async {
-  final userDoc = usersCollection.doc(partnerCode);
+    required String partnerCode,
+    required String tokenId,
+  }) async {
+    final userDoc = usersCollection.doc(partnerCode);
 
-  try {
-    final snapshot = await userDoc.get();
+    try {
+      final snapshot = await userDoc.get();
 
-    if (!snapshot.exists) {
-      return false; // doc doesn't exist, failure
+      if (!snapshot.exists) {
+        return false; // doc doesn't exist, failure
+      }
+
+      final data = snapshot.data();
+      final isOnline = data?['secondary_online_status'] == true;
+
+      if (!isOnline) {
+        await userDoc.update({
+          'secondary_online_status': true,
+          'secondary_last_timestamp': Timestamp.now(),
+          'secondary_token_id': tokenId,
+          'connected_status': true,
+        });
+      }
+
+      return true;
+    } catch (e) {
+      return false;
     }
-
-    final data = snapshot.data();
-    final isOnline = data?['secondary_online_status'] == true;
-
-    if (!isOnline) {
-      await userDoc.update({
-        'secondary_online_status': true,
-        'secondary_last_timestamp': Timestamp.now(),
-        'secondary_token_id': tokenId,
-        'connected_status': true,
-      });
-    }
-
-    return true; 
-  } catch (e) {
-    
-    return false;
   }
-}
 
+  static Future<String?> fetchPartnerToken({
+    required String code,
+    required String typeUser,
+  }) async {
+    final doc = await usersCollection.doc(code).get();
+    
+    if (!doc.exists) return null;
 
+    final data = doc.data();
+    if (data == null) return null;
+
+    final partnerField =
+        typeUser == 'main' ? 'secondary_token_id' : 'main_token_id';
+
+    final token = data[partnerField];
+    return (token is String && token.isNotEmpty) ? token : null;
+  }
 }
