@@ -117,17 +117,7 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
               showDialog(
                 context: context,
                 barrierDismissible: false,
-                builder:
-                    (context) => UserConnectionModal(
-                      mainTokenId: "",
-                      onConnect: (partnerCode) {
-                        // handle connection logic
-                        print('Connected with: $partnerCode');
-                        Navigator.of(
-                          context,
-                        ).pop(); // Close the dialog after connecting
-                      },
-                    ),
+                builder: (context) => UserConnectionModal(),
               );
             },
             tooltip: 'Connect with someone',
@@ -297,17 +287,7 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder:
-                      (context) => UserConnectionModal(
-                        mainTokenId: "",
-                        onConnect: (partnerCode) {
-                          // handle connection logic
-                          print('Connected with: $partnerCode');
-                          Navigator.of(
-                            context,
-                          ).pop(); // Close the dialog after connecting
-                        },
-                      ),
+                  builder: (context) => UserConnectionModal(),
                 );
               },
               icon: const Icon(Icons.person_add),

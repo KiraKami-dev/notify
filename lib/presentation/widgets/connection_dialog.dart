@@ -7,13 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
 
 class UserConnectionModal extends ConsumerStatefulWidget {
-  final String mainTokenId;
-  final Function(String partnerCode) onConnect;
 
   const UserConnectionModal({
     Key? key,
-    required this.mainTokenId,
-    required this.onConnect,
   }) : super(key: key);
 
   @override
@@ -57,32 +53,40 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
 
   void _startConnectionListener() {
     _connectionListener?.cancel(); // Cancel any existing listener
-    
-    final codeToListen = _activeTab == 1 
-        ? _generatedCode 
-        : _codeController.text.replaceAll(RegExp(r'[^0-9]'), '');
-        
-    if (codeToListen != '--- ---' && codeToListen.isNotEmpty) {
-      _connectionListener = FirebaseConnect.listenToConnectionStatus(codeToListen)
-        .listen((isConnected) {
-          if (isConnected && mounted) {
-            // Show success message and close dialog
 
-            ref.read(setConnectedStatusProvider(status: true));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Connection successful!'),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                margin: const EdgeInsets.all(16),
+    final codeToListen =
+        _activeTab == 1
+            ? _generatedCode
+            : _codeController.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (codeToListen != '--- ---' && codeToListen.isNotEmpty) {
+      _connectionListener = FirebaseConnect.listenToConnectionStatus(
+        codeToListen,
+      ).listen((isConnected) {
+        if (isConnected && mounted) {
+          // Show success message and close dialog
+          ref.read(
+            setGeneratedCodeProvider(
+              generatedCode: codeToListen,
+            ),
+          );
+          ref.read(setConnectedStatusProvider(status: true));
+
+          ref.read(setTypeUserProvider(typeUser: _activeTab == 0 ? 'secondary' : 'main'));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Connection successful!'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-            );
-            Navigator.of(context).pop();
-          }
-        });
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+          Navigator.of(context).pop();
+        }
+      });
     }
   }
 
@@ -108,9 +112,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: isKeyboardOpen 
-              ? mediaQuery.size.height * 0.8 
-              : 740,
+          maxHeight: isKeyboardOpen ? mediaQuery.size.height * 0.8 : 740,
         ),
         child: Column(
           children: [
@@ -176,9 +178,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                               _activeTab == 0
                                   ? [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(
-                                        0.1,
-                                      ),
+                                      color: Colors.black.withOpacity(0.1),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -224,9 +224,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                               _activeTab == 1
                                   ? [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(
-                                        0.1,
-                                      ),
+                                      color: Colors.black.withOpacity(0.1),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -255,9 +253,10 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
 
             // Dynamic content in Expanded with SingleChildScrollView
             Expanded(
-              child: _activeTab == 0
-                  ? _buildEnterCodeTab(colorScheme)
-                  : _buildShareCodeTab(colorScheme),
+              child:
+                  _activeTab == 0
+                      ? _buildEnterCodeTab(colorScheme)
+                      : _buildShareCodeTab(colorScheme),
             ),
 
             // Bottom actions with padding for keyboard
@@ -287,55 +286,64 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: (_isLoading || _shareLoading)
-                            ? null 
-                            : () {
-                                if (_activeTab == 0) {
-                                  _connectWithPartner();
-                                } else {
-                                  // Allow generating new code if expired or no code exists
-                                  if (_timeLeft.isNegative || _generatedCode == '--- ---') {
-                                    _refreshCode();
+                        onPressed:
+                            (_isLoading || _shareLoading)
+                                ? null
+                                : () {
+                                  if (_activeTab == 0) {
+                                    _connectWithPartner();
+                                  } else {
+                                    // Allow generating new code if expired or no code exists
+                                    if (_timeLeft.isNegative ||
+                                        _generatedCode == '--- ---') {
+                                      _refreshCode();
+                                    }
                                   }
-                                }
-                              },
+                                },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _activeTab == 0
-                                    ? colorScheme.primary
-                                    : (_timeLeft.isNegative || _generatedCode == '--- ---'
-                                        ? colorScheme.primary
-                                        : Colors.grey) ,
+                          backgroundColor:
+                              _activeTab == 0
+                                  ? colorScheme.primary
+                                  : (_timeLeft.isNegative ||
+                                          _generatedCode == '--- ---'
+                                      ? colorScheme.primary
+                                      : Colors.grey),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 0,
                           // Disable button only when loading or when code is active (not expired)
-                          disabledBackgroundColor: _activeTab == 1 && !_timeLeft.isNegative && _generatedCode != '--- ---'
-                              ? colorScheme.primary.withOpacity(0.6)
-                              : colorScheme.surfaceVariant,
+                          disabledBackgroundColor:
+                              _activeTab == 1 &&
+                                      !_timeLeft.isNegative &&
+                                      _generatedCode != '--- ---'
+                                  ? colorScheme.primary.withOpacity(0.6)
+                                  : colorScheme.surfaceVariant,
                         ),
-                        child: _isLoading || _shareLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
+                        child:
+                            _isLoading || _shareLoading
+                                ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : Text(
+                                  _activeTab == 0
+                                      ? 'Connect'
+                                      : (_timeLeft.isNegative ||
+                                              _generatedCode == '--- ---'
+                                          ? 'Generate New Code'
+                                          : 'Code Active'),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              )
-                            : Text(
-                                _activeTab == 0
-                                    ? 'Connect'
-                                    : (_timeLeft.isNegative || _generatedCode == '--- ---'
-                                        ? 'Generate New Code'
-                                        : 'Code Active'),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -393,7 +401,10 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
             const SizedBox(height: 8),
             Text(
               'Ask your partner to share their connection code with you',
-              style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 32),
 
@@ -422,11 +433,17 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                   suffixIcon: IconButton(
                     icon: Icon(Icons.paste, color: colorScheme.primary),
                     onPressed: () async {
-                      final data = await Clipboard.getData(Clipboard.kTextPlain);
+                      final data = await Clipboard.getData(
+                        Clipboard.kTextPlain,
+                      );
                       if (data != null && data.text != null) {
                         // Only take first 6 digits if longer
-                        final digits = data.text!.replaceAll(RegExp(r'[^0-9]'), '');
-                        _codeController.text = digits.length > 6 ? digits.substring(0, 6) : digits;
+                        final digits = data.text!.replaceAll(
+                          RegExp(r'[^0-9]'),
+                          '',
+                        );
+                        _codeController.text =
+                            digits.length > 6 ? digits.substring(0, 6) : digits;
                       }
                     },
                     tooltip: 'Paste from clipboard',
@@ -558,7 +575,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
     if (myTokenId.isEmpty) {
       throw Exception('No token ID available');
     }
-    
+
     setState(() => _shareLoading = true);
 
     try {
@@ -590,7 +607,6 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
 
       // Start listening for connection status after generating the code
       _startConnectionListener();
-
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -618,7 +634,10 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
             const SizedBox(height: 8),
             Text(
               'Share this code with your partner to connect',
-              style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 32),
 
@@ -783,9 +802,10 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: _timeLeft.isNegative 
-                    ? colorScheme.errorContainer 
-                    : colorScheme.secondaryContainer,
+                  color:
+                      _timeLeft.isNegative
+                          ? colorScheme.errorContainer
+                          : colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -801,9 +821,10 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                     Icon(
                       _timeLeft.isNegative ? Icons.error_outline : Icons.timer,
                       size: 20,
-                      color: _timeLeft.isNegative 
-                        ? colorScheme.error
-                        : colorScheme.secondary,
+                      color:
+                          _timeLeft.isNegative
+                              ? colorScheme.error
+                              : colorScheme.secondary,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -814,9 +835,10 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: _timeLeft.isNegative 
-                          ? colorScheme.error
-                          : colorScheme.secondary,
+                        color:
+                            _timeLeft.isNegative
+                                ? colorScheme.error
+                                : colorScheme.secondary,
                       ),
                     ),
                   ],
@@ -829,12 +851,34 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
   }
 
   void _connectWithPartner() async {
-    final code = _codeController.text.replaceAll(RegExp(r'[^0-9]'), '');
-    
-    if (code.isEmpty) {
+  final code = _codeController.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+  if (code.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Please enter a connection code'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+    return;
+  }
+
+  final myTokenId = ref.read(getMainTokenIdProvider);
+
+  try {
+    final isOwnCode = await FirebaseConnect.isOwnCode(code, myTokenId);
+    if (isOwnCode) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please enter a connection code'),
+          content: const Text(
+            'Cannot connect to your own code. Ask your partner to share their code instead.',
+          ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -843,55 +887,39 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
           margin: const EdgeInsets.all(16),
         ),
       );
+      _codeController.clear();
       return;
     }
 
-    // Check if trying to connect to own code
-    final myTokenId = ref.read(getMainTokenIdProvider);
-    try {
-      final isOwnCode = await FirebaseConnect.isOwnCode(code, myTokenId);
-      if (isOwnCode) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Cannot connect to your own code. Ask your partner to share their code instead.'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-        _codeController.clear();
-        return;
-      }
+    setState(() {
+      _isLoading = true;
+    });
 
-      // Start listening for connection status after validating the code
-      _startConnectionListener();
+    // Call the function to update secondary presence only if offline
+    final updated = await FirebaseConnect.updateSecondaryPresenceIfOffline(
+      partnerCode: code,
+      tokenId: myTokenId,
+    );
 
-      setState(() {
-        _isLoading = true;
-      });
+    if (!mounted) return;
 
-      // Call the onConnect callback with the partner code
-      await widget.onConnect(code);
-      
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-      
+    if (updated) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Connection failed: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          content: const Text('Connected and presence updated!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Presence was already online or update failed.'),
+          backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -900,11 +928,36 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
         ),
       );
     }
+
+    // Start listening for connection status after validating the code
+    _startConnectionListener();
+
+    setState(() {
+      _isLoading = false;
+    });
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Connection failed: ${e.toString()}'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
+}
 
   void _refreshCode() async {
     if (_shareLoading) return;
-    
+
     try {
       await _refreshShareCode();
     } catch (e) {

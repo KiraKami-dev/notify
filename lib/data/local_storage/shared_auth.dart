@@ -35,8 +35,8 @@ String getTypeUser(GetMainTokenIdRef ref) {
 }
 
 @riverpod
-Future<void> setGeneratedCode(SetGeneratedCodeRef ref, {required String typeUser}) async {
-  await prefs()!.setString('generatedCode', typeUser);
+Future<void> setGeneratedCode(SetGeneratedCodeRef ref, {required String generatedCode}) async {
+  await prefs()!.setString('generatedCode', generatedCode);
 }
 
 @riverpod

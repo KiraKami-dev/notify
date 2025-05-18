@@ -443,7 +443,7 @@ final getTypeUserProvider = AutoDisposeProvider<String>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef GetTypeUserRef = AutoDisposeProviderRef<String>;
-String _$setGeneratedCodeHash() => r'115296a61e458246b49bfdcf78b2ab2c862142c1';
+String _$setGeneratedCodeHash() => r'b635d3fe5a4a253d7d62cb1d08ead8ca14a27712';
 
 /// See also [setGeneratedCode].
 @ProviderFor(setGeneratedCode)
@@ -455,15 +455,15 @@ class SetGeneratedCodeFamily extends Family<AsyncValue<void>> {
   const SetGeneratedCodeFamily();
 
   /// See also [setGeneratedCode].
-  SetGeneratedCodeProvider call({required String typeUser}) {
-    return SetGeneratedCodeProvider(typeUser: typeUser);
+  SetGeneratedCodeProvider call({required String generatedCode}) {
+    return SetGeneratedCodeProvider(generatedCode: generatedCode);
   }
 
   @override
   SetGeneratedCodeProvider getProviderOverride(
     covariant SetGeneratedCodeProvider provider,
   ) {
-    return call(typeUser: provider.typeUser);
+    return call(generatedCode: provider.generatedCode);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -484,10 +484,12 @@ class SetGeneratedCodeFamily extends Family<AsyncValue<void>> {
 /// See also [setGeneratedCode].
 class SetGeneratedCodeProvider extends AutoDisposeFutureProvider<void> {
   /// See also [setGeneratedCode].
-  SetGeneratedCodeProvider({required String typeUser})
+  SetGeneratedCodeProvider({required String generatedCode})
     : this._internal(
-        (ref) =>
-            setGeneratedCode(ref as SetGeneratedCodeRef, typeUser: typeUser),
+        (ref) => setGeneratedCode(
+          ref as SetGeneratedCodeRef,
+          generatedCode: generatedCode,
+        ),
         from: setGeneratedCodeProvider,
         name: r'setGeneratedCodeProvider',
         debugGetCreateSourceHash:
@@ -497,7 +499,7 @@ class SetGeneratedCodeProvider extends AutoDisposeFutureProvider<void> {
         dependencies: SetGeneratedCodeFamily._dependencies,
         allTransitiveDependencies:
             SetGeneratedCodeFamily._allTransitiveDependencies,
-        typeUser: typeUser,
+        generatedCode: generatedCode,
       );
 
   SetGeneratedCodeProvider._internal(
@@ -507,10 +509,10 @@ class SetGeneratedCodeProvider extends AutoDisposeFutureProvider<void> {
     required super.allTransitiveDependencies,
     required super.debugGetCreateSourceHash,
     required super.from,
-    required this.typeUser,
+    required this.generatedCode,
   }) : super.internal();
 
-  final String typeUser;
+  final String generatedCode;
 
   @override
   Override overrideWith(
@@ -525,7 +527,7 @@ class SetGeneratedCodeProvider extends AutoDisposeFutureProvider<void> {
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
-        typeUser: typeUser,
+        generatedCode: generatedCode,
       ),
     );
   }
@@ -537,13 +539,14 @@ class SetGeneratedCodeProvider extends AutoDisposeFutureProvider<void> {
 
   @override
   bool operator ==(Object other) {
-    return other is SetGeneratedCodeProvider && other.typeUser == typeUser;
+    return other is SetGeneratedCodeProvider &&
+        other.generatedCode == generatedCode;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, typeUser.hashCode);
+    hash = _SystemHash.combine(hash, generatedCode.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -552,8 +555,8 @@ class SetGeneratedCodeProvider extends AutoDisposeFutureProvider<void> {
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin SetGeneratedCodeRef on AutoDisposeFutureProviderRef<void> {
-  /// The parameter `typeUser` of this provider.
-  String get typeUser;
+  /// The parameter `generatedCode` of this provider.
+  String get generatedCode;
 }
 
 class _SetGeneratedCodeProviderElement
@@ -562,7 +565,8 @@ class _SetGeneratedCodeProviderElement
   _SetGeneratedCodeProviderElement(super.provider);
 
   @override
-  String get typeUser => (origin as SetGeneratedCodeProvider).typeUser;
+  String get generatedCode =>
+      (origin as SetGeneratedCodeProvider).generatedCode;
 }
 
 String _$getGeneratedCodeHash() => r'895f779e868f802eeff5fe92eb86f5b773f1c8d1';

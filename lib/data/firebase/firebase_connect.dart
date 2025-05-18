@@ -91,4 +91,37 @@ class FirebaseConnect {
       await usersCollection.doc(code).delete();
     });
   }
+
+  static Future<bool> updateSecondaryPresenceIfOffline({
+  required String partnerCode,
+  required String tokenId,
+}) async {
+  final userDoc = usersCollection.doc(partnerCode);
+
+  try {
+    final snapshot = await userDoc.get();
+
+    if (!snapshot.exists) {
+      return false; // doc doesn't exist, failure
+    }
+
+    final data = snapshot.data();
+    final isOnline = data?['secondary_online_status'] == true;
+
+    if (!isOnline) {
+      await userDoc.update({
+        'secondary_online_status': true,
+        'secondary_last_timestamp': DateTime.now().toIso8601String(),
+        'secondary_token_id': tokenId,
+      });
+    }
+
+    return true; // success (updated or already online)
+  } catch (e) {
+    // optionally log error here
+    return false; // failure
+  }
+}
+
+
 }

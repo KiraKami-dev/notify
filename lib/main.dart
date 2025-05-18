@@ -1,3 +1,4 @@
+// import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,16 +74,16 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
             ),
           ),
         ),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.purpleAccent,
-            secondary: Colors.deepPurpleAccent,
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-          fontFamily: 'Poppins',
-        ),
-        themeMode: ThemeMode.system,
+        // darkTheme: ThemeData(
+        //   colorScheme: ColorScheme.fromSeed(
+        //     seedColor: Colors.purpleAccent,
+        //     secondary: Colors.deepPurpleAccent,
+        //     brightness: Brightness.dark,
+        //   ),
+        //   useMaterial3: true,
+        //   fontFamily: 'Poppins',
+        // ),
+        // themeMode: ThemeMode.system,
         home: const MessageSenderPage(),
       ),
     );
