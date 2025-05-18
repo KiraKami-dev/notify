@@ -34,6 +34,16 @@ String getTypeUser(GetMainTokenIdRef ref) {
   return prefs()!.getString('typeUser') ?? '';
 }
 
+@riverpod
+Future<void> setGeneratedCode(SetGeneratedCodeRef ref, {required String typeUser}) async {
+  await prefs()!.setString('generatedCode', typeUser);
+}
+
+@riverpod
+String getGeneratedCode(GetGeneratedCodeRef ref) {
+  return prefs()!.getString('generatedCode') ?? '';
+}
+
 
 class SharedPrefs {
   static SharedPreferences? prefs;

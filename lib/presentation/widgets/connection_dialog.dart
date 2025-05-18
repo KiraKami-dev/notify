@@ -67,6 +67,8 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
         .listen((isConnected) {
           if (isConnected && mounted) {
             // Show success message and close dialog
+
+            ref.read(setConnectedStatusProvider(status: true));
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Connection successful!'),

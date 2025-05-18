@@ -443,5 +443,145 @@ final getTypeUserProvider = AutoDisposeProvider<String>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef GetTypeUserRef = AutoDisposeProviderRef<String>;
+String _$setGeneratedCodeHash() => r'115296a61e458246b49bfdcf78b2ab2c862142c1';
+
+/// See also [setGeneratedCode].
+@ProviderFor(setGeneratedCode)
+const setGeneratedCodeProvider = SetGeneratedCodeFamily();
+
+/// See also [setGeneratedCode].
+class SetGeneratedCodeFamily extends Family<AsyncValue<void>> {
+  /// See also [setGeneratedCode].
+  const SetGeneratedCodeFamily();
+
+  /// See also [setGeneratedCode].
+  SetGeneratedCodeProvider call({required String typeUser}) {
+    return SetGeneratedCodeProvider(typeUser: typeUser);
+  }
+
+  @override
+  SetGeneratedCodeProvider getProviderOverride(
+    covariant SetGeneratedCodeProvider provider,
+  ) {
+    return call(typeUser: provider.typeUser);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'setGeneratedCodeProvider';
+}
+
+/// See also [setGeneratedCode].
+class SetGeneratedCodeProvider extends AutoDisposeFutureProvider<void> {
+  /// See also [setGeneratedCode].
+  SetGeneratedCodeProvider({required String typeUser})
+    : this._internal(
+        (ref) =>
+            setGeneratedCode(ref as SetGeneratedCodeRef, typeUser: typeUser),
+        from: setGeneratedCodeProvider,
+        name: r'setGeneratedCodeProvider',
+        debugGetCreateSourceHash:
+            const bool.fromEnvironment('dart.vm.product')
+                ? null
+                : _$setGeneratedCodeHash,
+        dependencies: SetGeneratedCodeFamily._dependencies,
+        allTransitiveDependencies:
+            SetGeneratedCodeFamily._allTransitiveDependencies,
+        typeUser: typeUser,
+      );
+
+  SetGeneratedCodeProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.typeUser,
+  }) : super.internal();
+
+  final String typeUser;
+
+  @override
+  Override overrideWith(
+    FutureOr<void> Function(SetGeneratedCodeRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: SetGeneratedCodeProvider._internal(
+        (ref) => create(ref as SetGeneratedCodeRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        typeUser: typeUser,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<void> createElement() {
+    return _SetGeneratedCodeProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SetGeneratedCodeProvider && other.typeUser == typeUser;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, typeUser.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin SetGeneratedCodeRef on AutoDisposeFutureProviderRef<void> {
+  /// The parameter `typeUser` of this provider.
+  String get typeUser;
+}
+
+class _SetGeneratedCodeProviderElement
+    extends AutoDisposeFutureProviderElement<void>
+    with SetGeneratedCodeRef {
+  _SetGeneratedCodeProviderElement(super.provider);
+
+  @override
+  String get typeUser => (origin as SetGeneratedCodeProvider).typeUser;
+}
+
+String _$getGeneratedCodeHash() => r'895f779e868f802eeff5fe92eb86f5b773f1c8d1';
+
+/// See also [getGeneratedCode].
+@ProviderFor(getGeneratedCode)
+final getGeneratedCodeProvider = AutoDisposeProvider<String>.internal(
+  getGeneratedCode,
+  name: r'getGeneratedCodeProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$getGeneratedCodeHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GetGeneratedCodeRef = AutoDisposeProviderRef<String>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

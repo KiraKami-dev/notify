@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:notify/data/local_notification/notification_service.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
+import 'package:notify/presentation/lifecycle/app_life_cycle.dart';
 import 'package:notify/presentation/main/home_page.dart';
 
 // Firebase Cloud Function URL
@@ -13,7 +14,7 @@ void main() async {
   await Firebase.initializeApp();
 
   await NotificationService.init();
-  
+
   // Initialize SharedPreferences
   await SharedPrefs().init();
 
@@ -39,49 +40,51 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Connect',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.purpleAccent,
-          secondary: Colors.deepPurpleAccent,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        fontFamily: 'Poppins',
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.grey.shade100,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
+    return AppLifecycleHandler(
+      child: MaterialApp(
+        title: 'Connect',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.purpleAccent,
+            secondary: Colors.deepPurpleAccent,
+            brightness: Brightness.light,
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            shape: RoundedRectangleBorder(
+          useMaterial3: true,
+          fontFamily: 'Poppins',
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 16,
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
           ),
         ),
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.purpleAccent,
-          secondary: Colors.deepPurpleAccent,
-          brightness: Brightness.dark,
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.purpleAccent,
+            secondary: Colors.deepPurpleAccent,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+          fontFamily: 'Poppins',
         ),
-        useMaterial3: true,
-        fontFamily: 'Poppins',
+        themeMode: ThemeMode.system,
+        home: const MessageSenderPage(),
       ),
-      themeMode: ThemeMode.system,
-      home: const MessageSenderPage(),
     );
   }
 
