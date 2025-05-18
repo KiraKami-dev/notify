@@ -8,12 +8,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
 
 class UserConnectionModal extends ConsumerStatefulWidget {
-  const UserConnectionModal({Key? key}) : super(key: key);
+  const UserConnectionModal({
+    Key? key,
+    required this.fetch,        
+  }) : super(key: key);
+
+  final VoidCallback fetch;      
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() =>
+  ConsumerState<UserConnectionModal> createState() =>
       _UserConnectionModalState();
 }
+
 
 class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
     with SingleTickerProviderStateMixin {
@@ -50,7 +56,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
   StreamSubscription? _connectionListener;
 
   void _startConnectionListener() {
-    _connectionListener?.cancel(); // Cancel any existing listener
+    _connectionListener?.cancel(); 
 
     final codeToListen =
         _activeTab == 1
@@ -60,32 +66,45 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
     if (codeToListen != '--- ---' && codeToListen.isNotEmpty) {
       _connectionListener = FirebaseConnect.listenToConnectionStatus(
         codeToListen,
-      ).listen((isConnected) {
+      ).listen((isConnected) async {
         if (isConnected && mounted) {
-          // Show success message and close dialog
+          // Cancel the listener immediately to prevent multiple triggers
+          _connectionListener?.cancel();
+          
+          // Show success message and update state
           ref.read(setGeneratedCodeProvider(generatedCode: codeToListen));
           ref.read(setConnectedStatusProvider(status: true));
-          FirebaseConnect.usersCollection.doc(codeToListen).update({
-            "main_last_timestamp": Timestamp.now(),
-          });
+          
+          final isMainUser = _activeTab == 1;
+          
+          if (isMainUser) {
+            // Update timestamp only once for main user
+            await FirebaseConnect.usersCollection.doc(codeToListen).update({
+              "main_last_timestamp": Timestamp.now(),
+            });
+          }
 
           ref.read(
             setTypeUserProvider(
-              typeUser: _activeTab == 0 ? 'secondary' : 'main',
+              typeUser: isMainUser ? 'main' : 'secondary',
             ),
           );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Connection successful!'),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Connection successful!'),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                margin: const EdgeInsets.all(16),
               ),
-              margin: const EdgeInsets.all(16),
-            ),
-          );
-          // Navigator.of(context).pop();
+            );
+            widget.fetch();
+            Navigator.of(context).pop(); // Close the dialog
+          }
         }
       });
     }
@@ -911,26 +930,8 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
       if (!mounted) return;
 
       if (updated) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Connected and presence updated!'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-
-        ref.read(setGeneratedCodeProvider(generatedCode: code));
-        ref.read(setConnectedStatusProvider(status: true));
-
-        ref.read(
-          setTypeUserProvider(typeUser: _activeTab == 0 ? 'secondary' : 'main'),
-        );
-
-        Navigator.pop(context);
+        // Start listening for connection status after updating presence
+        _startConnectionListener();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

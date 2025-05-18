@@ -316,8 +316,8 @@ Widget sentRecvIcon({
 
   return Icon(
     iSent
-        ? Icons.south_west
-        : Icons.north_east, 
+        ? Icons.north_east
+        : Icons.south_west , 
     size: 20,
     color: iSent ? Colors.green : Colors.blueGrey,
 

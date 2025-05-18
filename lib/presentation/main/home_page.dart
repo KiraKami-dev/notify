@@ -59,11 +59,21 @@ class _HomePageState extends ConsumerState<HomePage> {
       bool checkCode = await FirebaseConnect.codeExists(code);
 
       if (checkCode) {
-        connectedStatus = tempConnectionStatus;
-        generatedCode = code;
+        setState(() {
+          connectedStatus = tempConnectionStatus;
+          generatedCode = code;
+        });
       } else {
-        connectedStatus = false;
+        setState(() {
+          connectedStatus = false;
+          generatedCode = "";
+        });
       }
+    } else {
+      setState(() {
+        connectedStatus = false;
+        generatedCode = "";
+      });
     }
 
     if (connectedStatus) {
@@ -72,8 +82,10 @@ class _HomePageState extends ConsumerState<HomePage> {
         code: code,
         typeUser: myType,
       );
-      if (partnerToken != null || partnerToken != '') {
-        _partnerToken = partnerToken;
+      if (partnerToken != null && partnerToken.isNotEmpty) {
+        setState(() {
+          _partnerToken = partnerToken;
+        });
       }
     }
 
@@ -126,7 +138,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       if (response.statusCode == 200) {
         await FirebaseNotifications.addNotification(
-          targetUserId: generatedCode, 
+          targetUserId: generatedCode,
           title: title,
           body: message,
           stickerId: stickerItems[_currentImageIndex].id,
@@ -160,56 +172,56 @@ class _HomePageState extends ConsumerState<HomePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(
-              Icons.logout,
-              color: Theme.of(context).colorScheme.error,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(width: 8),
-            const Text('Confirm Logout'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Are you sure you want to logout?',
-              style: Theme.of(context).textTheme.bodyLarge,
+            title: Row(
+              children: [
+                Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
+                const SizedBox(width: 8),
+                const Text('Confirm Logout'),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'This will delete all your notifications and disconnect from your partner.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Are you sure you want to logout?',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'This will delete all your notifications and disconnect from your partner.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Logout'),
               ),
-            ),
+            ],
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
     );
 
     if (confirmed != true) return;
@@ -223,7 +235,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             .collection('users')
             .doc(generatedCode)
             .collection('notifications');
-        
+
         final notifications = await notificationsRef.get();
         for (final doc in notifications.docs) {
           await doc.reference.delete();
@@ -241,7 +253,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       final mainTokenId = prefs.getString('mainTokenId'); // Save mainTokenId
       await prefs.clear(); // Clear everything
       if (mainTokenId != null) {
-        await prefs.setString('mainTokenId', mainTokenId); // Restore mainTokenId
+        await prefs.setString(
+          'mainTokenId',
+          mainTokenId,
+        ); // Restore mainTokenId
       }
 
       // Reset local state
@@ -275,7 +290,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        toolbarHeight: 40,
+        toolbarHeight: 50,
         title: const Text(
           'Notify',
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -290,7 +305,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => UserConnectionModal(),
+                  builder:
+                      (context) => UserConnectionModal(
+                        fetch: () {
+                          _loadPartnerInfo();
+                        },
+                      ),
                 );
               },
               tooltip: 'Connect with someone',
@@ -349,24 +369,23 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             const Divider(),
             ListTile(
-              leading: _isLoading 
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  )
-                : Icon(
-                    Icons.logout,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+              leading:
+                  _isLoading
+                      ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      )
+                      : Icon(
+                        Icons.logout,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
               title: Text(
                 _isLoading ? 'Logging out...' : 'Logout',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               enabled: !_isLoading,
               onTap: () => _handleLogout(context),
@@ -407,26 +426,29 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   SegmentedButton<bool>(
-  segments: const [
-    ButtonSegment<bool>(
-      value: false,
-      icon: Icon(Icons.grid_view),
-      label: Text('All'),
-    ),
-    ButtonSegment<bool>(
-      value: true,
-      icon: Icon(Icons.favorite),
-      label: Text('Favorites'),
-    ),
-  ],
-  selected: {_showFavoritesOnly},
-  onSelectionChanged: (s) => setState(() => _showFavoritesOnly = s.first),
-  showSelectedIcon: false,   // ← mandatory to hide the tick
-  style: ButtonStyle(
-    visualDensity: VisualDensity.compact,
-  ),
-)
-,
+                                    segments: const [
+                                      ButtonSegment<bool>(
+                                        value: false,
+                                        icon: Icon(Icons.grid_view),
+                                        label: Text('All'),
+                                      ),
+                                      ButtonSegment<bool>(
+                                        value: true,
+                                        icon: Icon(Icons.favorite),
+                                        label: Text('Favorites'),
+                                      ),
+                                    ],
+                                    selected: {_showFavoritesOnly},
+                                    onSelectionChanged:
+                                        (s) => setState(
+                                          () => _showFavoritesOnly = s.first,
+                                        ),
+                                    showSelectedIcon:
+                                        false, // ← mandatory to hide the tick
+                                    style: ButtonStyle(
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -434,44 +456,70 @@ class _HomePageState extends ConsumerState<HomePage> {
                             Expanded(
                               child: PageView.builder(
                                 controller: _pageController,
-                                itemCount: _showFavoritesOnly
-                                    ? stickerItems.where((item) => item.isFavorite).length
-                                    : stickerItems.length,
+                                itemCount:
+                                    _showFavoritesOnly
+                                        ? stickerItems
+                                            .where((item) => item.isFavorite)
+                                            .length
+                                        : stickerItems.length,
                                 itemBuilder: (context, index) {
-                                  final items = _showFavoritesOnly
-                                      ? stickerItems.where((item) => item.isFavorite).toList()
-                                      : stickerItems;
+                                  final items =
+                                      _showFavoritesOnly
+                                          ? stickerItems
+                                              .where((item) => item.isFavorite)
+                                              .toList()
+                                          : stickerItems;
                                   final item = items[index];
                                   return AnimatedScale(
-                                    scale: _currentImageIndex == index ? 1.0 : 0.9,
+                                    scale:
+                                        _currentImageIndex == index ? 1.0 : 0.9,
                                     duration: const Duration(milliseconds: 200),
                                     child: Container(
-                                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 5.0,
+                                      ),
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(16),
                                         child: Stack(
                                           fit: StackFit.expand,
                                           children: [
-                                            Image.network(item.url, fit: BoxFit.cover),
+                                            Image.network(
+                                              item.url,
+                                              fit: BoxFit.cover,
+                                            ),
                                             Positioned(
                                               top: 8,
                                               right: 8,
                                               child: Container(
                                                 decoration: BoxDecoration(
-                                                  color: theme.colorScheme.surface.withOpacity(0.8),
-                                                  borderRadius: BorderRadius.circular(20),
+                                                  color: theme
+                                                      .colorScheme
+                                                      .surface
+                                                      .withOpacity(0.8),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
                                                 ),
                                                 child: IconButton(
                                                   icon: Icon(
-                                                    item.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                                    color: item.isFavorite ? Colors.red : theme.colorScheme.onSurface,
+                                                    item.isFavorite
+                                                        ? Icons.favorite
+                                                        : Icons.favorite_border,
+                                                    color:
+                                                        item.isFavorite
+                                                            ? Colors.red
+                                                            : theme
+                                                                .colorScheme
+                                                                .onSurface,
                                                   ),
                                                   onPressed: () async {
                                                     setState(() {
-                                                      item.isFavorite = !item.isFavorite;
+                                                      item.isFavorite =
+                                                          !item.isFavorite;
                                                     });
                                                     await ref.read(
-                                                      toggleFavoriteIdProvider(stickerId: item.id).future,
+                                                      toggleFavoriteIdProvider(
+                                                        stickerId: item.id,
+                                                      ).future,
                                                     );
                                                   },
                                                 ),
@@ -494,7 +542,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                       // Message Fields and Send Button
                       Padding(
                         padding: EdgeInsets.only(
-                          bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 8 : 0,
+                          bottom:
+                              MediaQuery.of(context).viewInsets.bottom > 0
+                                  ? 8
+                                  : 0,
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -508,7 +559,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 prefixIcon: Icon(Icons.title),
                                 filled: true,
                               ),
-                              validator: (v) => (v == null || v.isEmpty) ? 'Please enter a title' : null,
+                              validator:
+                                  (v) =>
+                                      (v == null || v.isEmpty)
+                                          ? 'Please enter a title'
+                                          : null,
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
@@ -523,33 +578,48 @@ class _HomePageState extends ConsumerState<HomePage> {
                               keyboardType: TextInputType.multiline,
                               minLines: 2,
                               maxLines: 3,
-                              validator: (v) => (v == null || v.isEmpty) ? 'Please enter a message' : null,
+                              validator:
+                                  (v) =>
+                                      (v == null || v.isEmpty)
+                                          ? 'Please enter a message'
+                                          : null,
                             ),
                             const SizedBox(height: 12),
                             ElevatedButton.icon(
-                              onPressed: _isLoading || connectedStatus == false
-                                  ? () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: const Text('Please connect with user first!'),
-                                          backgroundColor: Colors.red,
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
+                              onPressed:
+                                  _isLoading || connectedStatus == false
+                                      ? () {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: const Text(
+                                              'Please connect with user first!',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            margin: const EdgeInsets.all(16),
                                           ),
-                                          margin: const EdgeInsets.all(16),
+                                        );
+                                      }
+                                      : _sendMessage,
+                              icon:
+                                  _isLoading
+                                      ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
                                         ),
-                                      );
-                                    }
-                                  : _sendMessage,
-                              icon: _isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                  : const Icon(Icons.send),
-                              label: Text(_isLoading ? 'Sending...' : 'Send Message'),
+                                      )
+                                      : const Icon(Icons.send),
+                              label: Text(
+                                _isLoading ? 'Sending...' : 'Send Message',
+                              ),
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size(double.infinity, 48),
                                 backgroundColor: theme.colorScheme.primary,
