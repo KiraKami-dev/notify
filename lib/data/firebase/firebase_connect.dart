@@ -59,6 +59,23 @@ class FirebaseConnect {
     return code;
   }
 
+  static Stream<bool> listenToConnectionStatus(String code) {
+    return usersCollection.doc(code).snapshots().map((snapshot) {
+      if (!snapshot.exists) return false;
+      final data = snapshot.data();
+      if (data == null) return false;
+      return data['connected_status'] as bool? ?? false;
+    });
+  }
+
+  static Future<bool> isOwnCode(String code, String mainTokenId) async {
+    final doc = await usersCollection.doc(code).get();
+    if (!doc.exists) return false;
+    final data = doc.data();
+    if (data == null) return false;
+    return data['main_token_id'] == mainTokenId;
+  }
+
   /* ---------- private helpers ---------- */
 
   static String _sixDigit() =>
