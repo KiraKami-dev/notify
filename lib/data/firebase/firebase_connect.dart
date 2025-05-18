@@ -10,8 +10,7 @@ class FirebaseConnect {
     Duration timeout = const Duration(seconds: 5),
   }) async {
     try {
-      final snap =
-          await usersCollection.doc(token).get().timeout(timeout);
+      final snap = await usersCollection.doc(token).get().timeout(timeout);
       if (!snap.exists) return false;
       final data = snap.data();
       if (data == null) return false;
@@ -23,41 +22,55 @@ class FirebaseConnect {
   }
 
   static Future<String> createShareCode({
-  required String mainTokenId,
-  Duration ttl = const Duration(minutes: 10),
-}) async {
-  late String code;
+    required String mainTokenId,
+    Duration ttl = const Duration(minutes: 10),
+  }) async {
+    // 1️⃣ Re‑use existing doc for this token, if any
+    final existing =
+        await usersCollection
+            .where('main_token_id', isEqualTo: mainTokenId)
+            .limit(1)
+            .get();
 
-  do {
-    code = _eightDigit();
-  } while (await usersCollection.doc(code).get().then((d) => d.exists));
+    if (existing.docs.isNotEmpty) {
+      final code = existing.docs.first.id;
+      _expireIfUnconnected(code, ttl); // refresh expiry
+      return code;
+    }
 
-  await usersCollection.doc(code).set({
-    'connected_status':        false,
-    'main_last_timestamp':     '',
-    'main_online_status':      '',
-    'main_token_id':           mainTokenId,
-    'secondary_last_timestamp':'',
-    'secondary_online_status': '',
-    'secondary_token_id':      '',
-    'created_at':              Timestamp.now(),
-  });
+    // 2️⃣ Otherwise generate a fresh, unused 6‑digit code
+    late String code;
+    do {
+      code = _sixDigit();
+    } while (await usersCollection.doc(code).get().then((d) => d.exists));
 
-  _expireIfUnconnected(code, ttl);
-  return code;
-}
+    await usersCollection.doc(code).set({
+      'connected_status': false,
+      'main_last_timestamp': '',
+      'main_online_status': '',
+      'main_token_id': mainTokenId,
+      'secondary_last_timestamp': '',
+      'secondary_online_status': '',
+      'secondary_token_id': '',
+      'created_at': Timestamp.now(),
+    });
 
+    _expireIfUnconnected(code, ttl);
+    return code;
+  }
 
-  static String _eightDigit() =>
-      (10000000 + _rand.nextInt(90000000)).toString();
+  /* ---------- private helpers ---------- */
+
+  static String _sixDigit() =>
+      (100000 + _rand.nextInt(900000))
+          .toString(); // 100 000 – 999 999  (6 digits)
 
   static void _expireIfUnconnected(String code, Duration ttl) {
     Future.delayed(ttl, () async {
       final snap = await usersCollection.doc(code).get();
       if (!snap.exists) return;
-      final data = snap.data();
-      final status = data?['connected_status'];
-      if (status is bool && status) return; 
+      final status = snap.data()?['connected_status'];
+      if (status is bool && status) return; // connection succeeded
       await usersCollection.doc(code).delete();
     });
   }
