@@ -2,6 +2,28 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'shared_auth.g.dart';
+const _favKey = 'favoriteStickerIds';
+
+
+@riverpod
+Set<String> getFavoriteIds(GetFavoriteIdsRef ref) {
+  final ids = prefs()!.getStringList(_favKey) ?? <String>[];
+  return ids.toSet();
+}
+
+/// Adds or removes one ID, then saves back to SharedPreferences
+@riverpod
+Future<void> toggleFavoriteId(ToggleFavoriteIdRef ref,
+    {required String stickerId}) async {
+  final pref = prefs()!;
+  final ids = pref.getStringList(_favKey)?.toSet() ?? <String>{};
+
+  ids.contains(stickerId) ? ids.remove(stickerId) : ids.add(stickerId);
+
+  await pref.setStringList(_favKey, ids.toList());
+  
+  ref.invalidate(getFavoriteIdsProvider);
+}
 
 @riverpod
 Future<void> setConnectedStatus(SetConnectedStatusRef ref, {required bool status}) async {

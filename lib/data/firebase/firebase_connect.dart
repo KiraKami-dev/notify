@@ -140,4 +140,14 @@ class FirebaseConnect {
     final token = data[partnerField];
     return (token is String && token.isNotEmpty) ? token : null;
   }
+
+   static Future<bool> codeExists(String code) async {
+    try {
+      final doc = await usersCollection.doc(code).get();
+      return doc.exists;
+    } catch (_) {
+      
+      return false;
+    }
+  }
 }

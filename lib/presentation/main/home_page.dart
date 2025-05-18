@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:notify/config/const_variables.dart';
 import 'package:notify/data/firebase/firebase_connect.dart';
+import 'package:notify/data/firebase/firebase_stickers.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
+import 'package:notify/domain/sticker_model.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,6 +28,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _currentImageIndex = 0;
   bool _showFavoritesOnly = false;
   bool connectedStatus = false;
+  List<Sticker> stickerItems = [];
 
   // Sample data - Replace with your actual data
   final List<Map<String, dynamic>> _notifications = [
@@ -55,51 +58,57 @@ class _HomePageState extends ConsumerState<HomePage> {
     },
   ];
 
-  final List<Map<String, dynamic>> _carouselItems = [
-    {
-      'image': 'https://picsum.photos/id/237/200/300',
-      'title': 'Good Morning!',
-      'message': 'Have a great day ahead!',
-      'isFavorite': false,
-    },
-    {
-      'image': 'https://picsum.photos/id/238/200/300',
-      'title': 'Meeting Reminder',
-      'message': 'Team meeting at 2 PM',
-      'isFavorite': false,
-    },
-    {
-      'image': 'https://picsum.photos/id/239/200/300',
-      'title': 'Lunch Break',
-      'message': 'Time for a healthy lunch!',
-      'isFavorite': false,
-    },
-  ];
+  // [
+  //   {
+  //     'image': 'https://picsum.photos/id/237/200/300',
+  //     'title': 'Good Morning!',
+  //     'message': 'Have a great day ahead!',
+  //     'isFavorite': false,
+  //   },
+  //   {
+  //     'image': 'https://picsum.photos/id/238/200/300',
+  //     'title': 'Meeting Reminder',
+  //     'message': 'Team meeting at 2 PM',
+  //     'isFavorite': false,
+  //   },
+  //   {
+  //     'image': 'https://picsum.photos/id/239/200/300',
+  //     'title': 'Lunch Break',
+  //     'message': 'Time for a healthy lunch!',
+  //     'isFavorite': false,
+  //   },
+  // ];
 
   @override
   void initState() {
     super.initState();
     _loadPartnerInfo();
-    _pageController.addListener(() {
-      final page = _pageController.page?.round() ?? 0;
-      if (page != _currentImageIndex) {
-        setState(() {
-          _currentImageIndex = page;
-          _titleController.text = _carouselItems[page]['title'];
-          _messageController.text = _carouselItems[page]['message'];
-        });
+  }
+
+  Future<void> loadFavorites() async {
+    final favIds = ref.read(getFavoriteIdsProvider); // no .future here
+    setState(() {
+      for (final s in stickerItems) {
+        s.isFavorite = favIds.contains(s.id);
       }
     });
-
-    // Set initial text from first carousel item
-    _titleController.text = _carouselItems[0]['title'];
-    _messageController.text = _carouselItems[0]['message'];
   }
 
   Future<void> _loadPartnerInfo() async {
-    connectedStatus = ref.read(getConnectedStatusProvider);
+    final tempConnectionStatus = ref.read(getConnectedStatusProvider);
+    String code = ref.read(getGeneratedCodeProvider);
+
+    if (code.isNotEmpty) {
+      bool checkCode = await FirebaseConnect.codeExists(code);
+
+      if (checkCode) {
+        connectedStatus = tempConnectionStatus;
+      } else {
+        connectedStatus = false;
+      }
+    }
+
     if (connectedStatus) {
-      String code = ref.read(getGeneratedCodeProvider);
       String typeUser = ref.read(getTypeUserProvider);
       String? partnerToken = await FirebaseConnect.fetchPartnerToken(
         code: code,
@@ -110,6 +119,21 @@ class _HomePageState extends ConsumerState<HomePage> {
       }
     }
 
+    stickerItems = await FirebaseStickers.fetchStickers();
+    await loadFavorites();
+    setState(() {});
+    _pageController.addListener(() {
+      final page = _pageController.page?.round() ?? 0;
+      if (page != _currentImageIndex) {
+        _currentImageIndex = page;
+        _titleController.text = stickerItems[page].title;
+        _messageController.text = stickerItems[page].body;
+      }
+    });
+
+    // Set initial text from first carousel item
+    _titleController.text = stickerItems[0].title;
+    _messageController.text = stickerItems[0].body;
     setState(() {});
   }
 
@@ -138,7 +162,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           'token': _partnerToken,
           'title': title,
           'body': message,
-          'image': _carouselItems[_currentImageIndex]['image'],
+          'image': stickerItems[_currentImageIndex].url,
         }),
       );
 
@@ -424,22 +448,22 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
-                      height: availableHeight * 0.3,
+                      height: availableHeight * 0.31,
                       child: PageView.builder(
                         controller: _pageController,
                         itemCount:
                             _showFavoritesOnly
-                                ? _carouselItems
-                                    .where((item) => item['isFavorite'])
+                                ? stickerItems
+                                    .where((item) => item.isFavorite)
                                     .length
-                                : _carouselItems.length,
+                                : stickerItems.length,
                         itemBuilder: (context, index) {
                           final items =
                               _showFavoritesOnly
-                                  ? _carouselItems
-                                      .where((item) => item['isFavorite'])
+                                  ? stickerItems
+                                      .where((item) => item.isFavorite)
                                       .toList()
-                                  : _carouselItems;
+                                  : stickerItems;
                           final item = items[index];
                           return AnimatedScale(
                             scale: _currentImageIndex == index ? 1.0 : 0.9,
@@ -453,10 +477,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    Image.network(
-                                      item['image'],
-                                      fit: BoxFit.cover,
-                                    ),
+                                    Image.network(item.url, fit: BoxFit.cover),
                                     Positioned(
                                       top: 8,
                                       right: 8,
@@ -470,21 +491,26 @@ class _HomePageState extends ConsumerState<HomePage> {
                                         ),
                                         child: IconButton(
                                           icon: Icon(
-                                            item['isFavorite']
+                                            item.isFavorite
                                                 ? Icons.favorite
                                                 : Icons.favorite_border,
                                             color:
-                                                item['isFavorite']
+                                                item.isFavorite
                                                     ? Colors.red
                                                     : theme
                                                         .colorScheme
                                                         .onSurface,
                                           ),
-                                          onPressed: () {
+                                          onPressed: () async {
                                             setState(() {
-                                              item['isFavorite'] =
-                                                  !item['isFavorite'];
+                                              item.isFavorite =
+                                                  !item.isFavorite;
                                             });
+                                            await ref.read(
+                                              toggleFavoriteIdProvider(
+                                                stickerId: item.id,
+                                              ).future,
+                                            );
                                           },
                                         ),
                                       ),

@@ -6,8 +6,25 @@ part of 'shared_auth.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$setConnectedStatusHash() =>
-    r'3175a0d6fb215bbf3f4a5643a7260110c96b625d';
+String _$getFavoriteIdsHash() => r'f85b900f622cbff692216c37b41dd22a543bd827';
+
+/// See also [getFavoriteIds].
+@ProviderFor(getFavoriteIds)
+final getFavoriteIdsProvider = AutoDisposeProvider<Set<String>>.internal(
+  getFavoriteIds,
+  name: r'getFavoriteIdsProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$getFavoriteIdsHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GetFavoriteIdsRef = AutoDisposeProviderRef<Set<String>>;
+String _$toggleFavoriteIdHash() => r'e2e7894ee9f75f3d4c0b831a43e578c8cc259978';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,6 +46,141 @@ class _SystemHash {
     return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
   }
 }
+
+/// Adds or removes one ID, then saves back to SharedPreferences
+///
+/// Copied from [toggleFavoriteId].
+@ProviderFor(toggleFavoriteId)
+const toggleFavoriteIdProvider = ToggleFavoriteIdFamily();
+
+/// Adds or removes one ID, then saves back to SharedPreferences
+///
+/// Copied from [toggleFavoriteId].
+class ToggleFavoriteIdFamily extends Family<AsyncValue<void>> {
+  /// Adds or removes one ID, then saves back to SharedPreferences
+  ///
+  /// Copied from [toggleFavoriteId].
+  const ToggleFavoriteIdFamily();
+
+  /// Adds or removes one ID, then saves back to SharedPreferences
+  ///
+  /// Copied from [toggleFavoriteId].
+  ToggleFavoriteIdProvider call({required String stickerId}) {
+    return ToggleFavoriteIdProvider(stickerId: stickerId);
+  }
+
+  @override
+  ToggleFavoriteIdProvider getProviderOverride(
+    covariant ToggleFavoriteIdProvider provider,
+  ) {
+    return call(stickerId: provider.stickerId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'toggleFavoriteIdProvider';
+}
+
+/// Adds or removes one ID, then saves back to SharedPreferences
+///
+/// Copied from [toggleFavoriteId].
+class ToggleFavoriteIdProvider extends AutoDisposeFutureProvider<void> {
+  /// Adds or removes one ID, then saves back to SharedPreferences
+  ///
+  /// Copied from [toggleFavoriteId].
+  ToggleFavoriteIdProvider({required String stickerId})
+    : this._internal(
+        (ref) =>
+            toggleFavoriteId(ref as ToggleFavoriteIdRef, stickerId: stickerId),
+        from: toggleFavoriteIdProvider,
+        name: r'toggleFavoriteIdProvider',
+        debugGetCreateSourceHash:
+            const bool.fromEnvironment('dart.vm.product')
+                ? null
+                : _$toggleFavoriteIdHash,
+        dependencies: ToggleFavoriteIdFamily._dependencies,
+        allTransitiveDependencies:
+            ToggleFavoriteIdFamily._allTransitiveDependencies,
+        stickerId: stickerId,
+      );
+
+  ToggleFavoriteIdProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.stickerId,
+  }) : super.internal();
+
+  final String stickerId;
+
+  @override
+  Override overrideWith(
+    FutureOr<void> Function(ToggleFavoriteIdRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ToggleFavoriteIdProvider._internal(
+        (ref) => create(ref as ToggleFavoriteIdRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        stickerId: stickerId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<void> createElement() {
+    return _ToggleFavoriteIdProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ToggleFavoriteIdProvider && other.stickerId == stickerId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, stickerId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ToggleFavoriteIdRef on AutoDisposeFutureProviderRef<void> {
+  /// The parameter `stickerId` of this provider.
+  String get stickerId;
+}
+
+class _ToggleFavoriteIdProviderElement
+    extends AutoDisposeFutureProviderElement<void>
+    with ToggleFavoriteIdRef {
+  _ToggleFavoriteIdProviderElement(super.provider);
+
+  @override
+  String get stickerId => (origin as ToggleFavoriteIdProvider).stickerId;
+}
+
+String _$setConnectedStatusHash() =>
+    r'3175a0d6fb215bbf3f4a5643a7260110c96b625d';
 
 /// See also [setConnectedStatus].
 @ProviderFor(setConnectedStatus)
