@@ -158,13 +158,13 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
-    final availableHeight =
-        screenHeight - MediaQuery.of(context).padding.top - kToolbarHeight;
+    // final availableHeight =
+    //     screenHeight - MediaQuery.of(context).padding.top - kToolbarHeight;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
-      toolbarHeight: 40,
+        toolbarHeight: 40,
         title: const Text(
           'Notify',
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -248,188 +248,198 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                // Latest Notifications - Give it a flexible height
-                Flexible(
-                  flex: 3,
-                  child: LatestNotificationsWidget(userId: generatedCode),
-                ),
-
-                const SizedBox(height: 4),
-
-                // Carousel Section with Switch
-                Flexible(
-                  flex: 4,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(8),
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     children: [
-                      Container(
-                        width: 242,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      // Latest Notifications
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.25,
+                        child: LatestNotificationsWidget(userId: generatedCode),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      // Carousel Section with Switch
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.35,
+                        child: Column(
                           children: [
-                            SegmentedButton<bool>(
-                              segments: const [
-                                ButtonSegment<bool>(
-                                  value: false,
-                                  icon: Icon(Icons.grid_view),
-                                  label: Text('All'),
-                                ),
-                                ButtonSegment<bool>(
-                                  value: true,
-                                  icon: Icon(Icons.favorite),
-                                  label: Text('Favorites'),
-                                ),
-                              ],
-                              selected: {_showFavoritesOnly},
-                              onSelectionChanged: (Set<bool> newSelection) {
-                                setState(() {
-                                  _showFavoritesOnly = newSelection.first;
-                                });
-                              },
-                              style: ButtonStyle(
-                                visualDensity: VisualDensity.compact,
+                            Container(
+                              width: 242,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SegmentedButton<bool>(
+                                    segments: const [
+                                      ButtonSegment<bool>(
+                                        value: false,
+                                        icon: Icon(Icons.grid_view),
+                                        label: Text('All'),
+                                      ),
+                                      ButtonSegment<bool>(
+                                        value: true,
+                                        icon: Icon(Icons.favorite),
+                                        label: Text('Favorites'),
+                                      ),
+                                    ],
+                                    selected: {_showFavoritesOnly},
+                                    onSelectionChanged: (Set<bool> newSelection) {
+                                      setState(() {
+                                        _showFavoritesOnly = newSelection.first;
+                                      });
+                                    },
+                                    style: ButtonStyle(
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: PageView.builder(
+                                controller: _pageController,
+                                itemCount: _showFavoritesOnly
+                                    ? stickerItems.where((item) => item.isFavorite).length
+                                    : stickerItems.length,
+                                itemBuilder: (context, index) {
+                                  final items = _showFavoritesOnly
+                                      ? stickerItems.where((item) => item.isFavorite).toList()
+                                      : stickerItems;
+                                  final item = items[index];
+                                  return AnimatedScale(
+                                    scale: _currentImageIndex == index ? 1.0 : 0.9,
+                                    duration: const Duration(milliseconds: 200),
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            Image.network(item.url, fit: BoxFit.cover),
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: theme.colorScheme.surface.withOpacity(0.8),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: IconButton(
+                                                  icon: Icon(
+                                                    item.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                                    color: item.isFavorite ? Colors.red : theme.colorScheme.onSurface,
+                                                  ),
+                                                  onPressed: () async {
+                                                    setState(() {
+                                                      item.isFavorite = !item.isFavorite;
+                                                    });
+                                                    await ref.read(
+                                                      toggleFavoriteIdProvider(stickerId: item.id).future,
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ],
                         ),
                       ),
+
                       const SizedBox(height: 8),
-                      Expanded(
-                        child: PageView.builder(
-                          controller: _pageController,
-                          itemCount: _showFavoritesOnly
-                              ? stickerItems.where((item) => item.isFavorite).length
-                              : stickerItems.length,
-                          itemBuilder: (context, index) {
-                            final items = _showFavoritesOnly
-                                ? stickerItems.where((item) => item.isFavorite).toList()
-                                : stickerItems;
-                            final item = items[index];
-                            return AnimatedScale(
-                              scale: _currentImageIndex == index ? 1.0 : 0.9,
-                              duration: const Duration(milliseconds: 200),
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      Image.network(item.url, fit: BoxFit.cover),
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: theme.colorScheme.surface.withOpacity(0.8),
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: IconButton(
-                                            icon: Icon(
-                                              item.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                              color: item.isFavorite ? Colors.red : theme.colorScheme.onSurface,
-                                            ),
-                                            onPressed: () async {
-                                              setState(() {
-                                                item.isFavorite = !item.isFavorite;
-                                              });
-                                              await ref.read(
-                                                toggleFavoriteIdProvider(stickerId: item.id).future,
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+
+                      // Message Fields and Send Button
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 8 : 0,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _titleController,
+                              decoration: const InputDecoration(
+                                labelText: 'Message Title',
+                                hintText: 'Enter a title for your message',
+                                prefixIcon: Icon(Icons.title),
+                                filled: true,
                               ),
-                            );
-                          },
+                              validator: (v) => (v == null || v.isEmpty) ? 'Please enter a title' : null,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _messageController,
+                              decoration: const InputDecoration(
+                                labelText: 'Your Message',
+                                hintText: 'Type your message here…',
+                                prefixIcon: Icon(Icons.message),
+                                alignLabelWithHint: true,
+                                filled: true,
+                              ),
+                              keyboardType: TextInputType.multiline,
+                              minLines: 2,
+                              maxLines: 3,
+                              validator: (v) => (v == null || v.isEmpty) ? 'Please enter a message' : null,
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              onPressed: _isLoading || connectedStatus == false
+                                  ? () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: const Text('Please connect with user first!'),
+                                          backgroundColor: Colors.red,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          margin: const EdgeInsets.all(16),
+                                        ),
+                                      );
+                                    }
+                                  : _sendMessage,
+                              icon: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.send),
+                              label: Text(_isLoading ? 'Sending...' : 'Send Message'),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 48),
+                                backgroundColor: theme.colorScheme.primary,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 8),
-
-                // Message Fields and Send Button
-                Flexible(
-                  flex: 3,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Message Title',
-                          hintText: 'Enter a title for your message',
-                          prefixIcon: Icon(Icons.title),
-                        ),
-                        validator: (v) => (v == null || v.isEmpty) ? 'Please enter a title' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _messageController,
-                        decoration: const InputDecoration(
-                          labelText: 'Your Message',
-                          hintText: 'Type your message here…',
-                          prefixIcon: Icon(Icons.message),
-                          alignLabelWithHint: true,
-                        ),
-                        keyboardType: TextInputType.multiline,
-                        minLines: 2,
-                        maxLines: 3,
-                        validator: (v) => (v == null || v.isEmpty) ? 'Please enter a message' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: _isLoading || connectedStatus == false
-                            ? () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text('Please connect with user first!'),
-                                    backgroundColor: Colors.red,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    margin: const EdgeInsets.all(16),
-                                  ),
-                                );
-                              }
-                            : _sendMessage,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.send),
-                        label: Text(_isLoading ? 'Sending...' : 'Send Message'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
