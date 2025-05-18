@@ -84,7 +84,7 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
         //   fontFamily: 'Poppins',
         // ),
         // themeMode: ThemeMode.system,
-        home: const MessageSenderPage(),
+        home: const HomePage(),
       ),
     );
   }

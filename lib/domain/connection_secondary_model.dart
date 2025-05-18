@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ConnectionSecondaryStatus {
-  final bool connectedStatus;
-  final String secondaryLastTimestamp;
-  final bool secondaryOnlineStatus;
-  final String secondaryTokenId;
+  final bool       connectedStatus;
+  final Timestamp? secondaryLastTimestamp;   // ← Firestore Timestamp
+  final bool       secondaryOnlineStatus;
+  final String     secondaryTokenId;
 
   ConnectionSecondaryStatus({
     required this.connectedStatus,
@@ -13,20 +15,19 @@ class ConnectionSecondaryStatus {
 
   factory ConnectionSecondaryStatus.fromJson(Map<String, dynamic> json) {
     return ConnectionSecondaryStatus(
-      connectedStatus: json['connected_status'] ?? false,
-      secondaryLastTimestamp: json['secondary_last_timestamp'] ?? '',
-      secondaryOnlineStatus: json['secondary_online_status'] ?? false,
-      secondaryTokenId: json['secondary_token_id'] ?? '',
+      connectedStatus        : json['connected_status']        ?? false,
+      secondaryLastTimestamp : json['secondary_last_timestamp'] as Timestamp?,
+      secondaryOnlineStatus  : json['secondary_online_status'] ?? false,
+      secondaryTokenId       : json['secondary_token_id']      ?? '',
     );
   }
 
-  // Method to convert the object to a map
   Map<String, dynamic> toJson() {
     return {
-      'connected_status': connectedStatus,
+      'connected_status'        : connectedStatus,
       'secondary_last_timestamp': secondaryLastTimestamp,
-      'secondary_online_status': secondaryOnlineStatus,
-      'secondary_token_id': secondaryTokenId,
+      'secondary_online_status' : secondaryOnlineStatus,
+      'secondary_token_id'      : secondaryTokenId,
     };
   }
 }

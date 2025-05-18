@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:notify/config/const_variables.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
 
-class MessageSenderPage extends StatefulWidget {
-  const MessageSenderPage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<MessageSenderPage> createState() => _MessageSenderPageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MessageSenderPageState extends State<MessageSenderPage> {
+class _HomePageState extends State<HomePage> {
   final _formKey = GlobalKey<FormState>();
   final _tokenController = TextEditingController();
   final _titleController = TextEditingController();
@@ -103,6 +103,7 @@ class _MessageSenderPageState extends State<MessageSenderPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text(
           'Connect',

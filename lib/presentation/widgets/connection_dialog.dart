@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:notify/data/firebase/firebase_connect.dart';
@@ -7,10 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
 
 class UserConnectionModal extends ConsumerStatefulWidget {
-
-  const UserConnectionModal({
-    Key? key,
-  }) : super(key: key);
+  const UserConnectionModal({Key? key}) : super(key: key);
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
@@ -65,14 +63,17 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
       ).listen((isConnected) {
         if (isConnected && mounted) {
           // Show success message and close dialog
+          ref.read(setGeneratedCodeProvider(generatedCode: codeToListen));
+          ref.read(setConnectedStatusProvider(status: true));
+          FirebaseConnect.usersCollection.doc(codeToListen).update({
+            "main_last_timestamp": Timestamp.now(),
+          });
+
           ref.read(
-            setGeneratedCodeProvider(
-              generatedCode: codeToListen,
+            setTypeUserProvider(
+              typeUser: _activeTab == 0 ? 'secondary' : 'main',
             ),
           );
-          ref.read(setConnectedStatusProvider(status: true));
-
-          ref.read(setTypeUserProvider(typeUser: _activeTab == 0 ? 'secondary' : 'main'));
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Connection successful!'),
@@ -108,14 +109,23 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
     final isKeyboardOpen = viewInsets.bottom > 0;
 
     return Dialog(
-      insetPadding: const EdgeInsets.all(16),
+      insetPadding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: isKeyboardOpen ? 8 : 16,
+        bottom: isKeyboardOpen ? 0 : 16,
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: isKeyboardOpen ? mediaQuery.size.height * 0.8 : 740,
+          maxHeight: isKeyboardOpen 
+              ? mediaQuery.size.height - viewInsets.bottom - 32
+              : 740,
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Row(
@@ -251,130 +261,126 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
               ),
             ),
 
-            // Dynamic content in Expanded with SingleChildScrollView
+            // Dynamic content
             Expanded(
-              child:
-                  _activeTab == 0
-                      ? _buildEnterCodeTab(colorScheme)
-                      : _buildShareCodeTab(colorScheme),
+              child: _activeTab == 0
+                  ? _buildEnterCodeTab(colorScheme)
+                  : _buildShareCodeTab(colorScheme),
             ),
 
-            // Bottom actions with padding for keyboard
-            Padding(
+            // Bottom actions
+            Container(
               padding: EdgeInsets.only(
-                bottom: isKeyboardOpen ? viewInsets.bottom : 0,
+                left: 24,
+                right: 24,
+                top: 16,
+                bottom: isKeyboardOpen ? viewInsets.bottom + 16 : 16,
               ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed:
-                            (_isLoading || _shareLoading)
-                                ? null
-                                : () {
-                                  if (_activeTab == 0) {
-                                    _connectWithPartner();
-                                  } else {
-                                    // Allow generating new code if expired or no code exists
-                                    if (_timeLeft.isNegative ||
-                                        _generatedCode == '--- ---') {
-                                      _refreshCode();
-                                    }
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed:
+                          (_isLoading || _shareLoading)
+                              ? null
+                              : () {
+                                if (_activeTab == 0) {
+                                  _connectWithPartner();
+                                } else {
+                                  // Allow generating new code if expired or no code exists
+                                  if (_timeLeft.isNegative ||
+                                      _generatedCode == '--- ---') {
+                                    _refreshCode();
                                   }
-                                },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              _activeTab == 0
-                                  ? colorScheme.primary
-                                  : (_timeLeft.isNegative ||
-                                          _generatedCode == '--- ---'
-                                      ? colorScheme.primary
-                                      : Colors.grey),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
-                          // Disable button only when loading or when code is active (not expired)
-                          disabledBackgroundColor:
-                              _activeTab == 1 &&
-                                      !_timeLeft.isNegative &&
-                                      _generatedCode != '--- ---'
-                                  ? colorScheme.primary.withOpacity(0.6)
-                                  : colorScheme.surfaceVariant,
+                                }
+                              },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            _activeTab == 0
+                                ? colorScheme.primary
+                                : (_timeLeft.isNegative ||
+                                        _generatedCode == '--- ---'
+                                    ? colorScheme.primary
+                                    : Colors.grey),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        child:
-                            _isLoading || _shareLoading
-                                ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                                : Text(
-                                  _activeTab == 0
-                                      ? 'Connect'
-                                      : (_timeLeft.isNegative ||
-                                              _generatedCode == '--- ---'
-                                          ? 'Generate New Code'
-                                          : 'Code Active'),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                        elevation: 0,
+                        // Disable button only when loading or when code is active (not expired)
+                        disabledBackgroundColor:
+                            _activeTab == 1 &&
+                                    !_timeLeft.isNegative &&
+                                    _generatedCode != '--- ---'
+                                ? colorScheme.primary.withOpacity(0.6)
+                                : colorScheme.surfaceVariant,
                       ),
+                      child:
+                          _isLoading || _shareLoading
+                              ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Text(
+                                _activeTab == 0
+                                    ? 'Connect'
+                                    : (_timeLeft.isNegative ||
+                                            _generatedCode == '--- ---'
+                                        ? 'Generate New Code'
+                                        : 'Code Active'),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Having trouble?',
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Having trouble?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          _showTroubleshootingDialog(context);
+                        },
+                        child: Text(
+                          'Get help',
                           style: TextStyle(
                             fontSize: 14,
-                            color: colorScheme.onSurfaceVariant,
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () {
-                            _showTroubleshootingDialog(context);
-                          },
-                          child: Text(
-                            'Get help',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -389,6 +395,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Enter Partner Code',
@@ -437,7 +444,6 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                         Clipboard.kTextPlain,
                       );
                       if (data != null && data.text != null) {
-                        // Only take first 6 digits if longer
                         final digits = data.text!.replaceAll(
                           RegExp(r'[^0-9]'),
                           '',
@@ -462,7 +468,6 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                   LengthLimitingTextInputFormatter(6),
                 ],
                 onChanged: (value) {
-                  // Auto-connect when 6 digits are entered
                   if (value.length == 6) {
                     _connectWithPartner();
                   }
@@ -472,7 +477,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
 
             const SizedBox(height: 32),
 
-            // Connection instructions
+            // Instructions
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -851,34 +856,12 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
   }
 
   void _connectWithPartner() async {
-  final code = _codeController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final code = _codeController.text.replaceAll(RegExp(r'[^0-9]'), '');
 
-  if (code.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Please enter a connection code'),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
-    return;
-  }
-
-  final myTokenId = ref.read(getMainTokenIdProvider);
-
-  try {
-    final isOwnCode = await FirebaseConnect.isOwnCode(code, myTokenId);
-    if (isOwnCode) {
-      if (!mounted) return;
+    if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'Cannot connect to your own code. Ask your partner to share their code instead.',
-          ),
+          content: const Text('Please enter a connection code'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -887,39 +870,92 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
           margin: const EdgeInsets.all(16),
         ),
       );
-      _codeController.clear();
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    final myTokenId = ref.read(getMainTokenIdProvider);
 
-    // Call the function to update secondary presence only if offline
-    final updated = await FirebaseConnect.updateSecondaryPresenceIfOffline(
-      partnerCode: code,
-      tokenId: myTokenId,
-    );
-
-    if (!mounted) return;
-
-    if (updated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Connected and presence updated!'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+    try {
+      final isOwnCode = await FirebaseConnect.isOwnCode(code, myTokenId);
+      if (isOwnCode) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Cannot connect to your own code. Ask your partner to share their code instead.',
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(16),
           ),
-          margin: const EdgeInsets.all(16),
-        ),
+        );
+        _codeController.clear();
+        return;
+      }
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Call the function to update secondary presence only if offline
+      final updated = await FirebaseConnect.updateSecondaryPresenceIfOffline(
+        partnerCode: code,
+        tokenId: myTokenId,
       );
-    } else {
+
+      if (!mounted) return;
+
+      if (updated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Connected and presence updated!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        ref.read(setConnectedStatusProvider(status: true));
+
+        ref.read(
+          setTypeUserProvider(typeUser: _activeTab == 0 ? 'secondary' : 'main'),
+        );
+
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Presence was already online or update failed.',
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Presence was already online or update failed.'),
-          backgroundColor: Colors.orange,
+          content: Text('Connection failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -928,32 +964,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
         ),
       );
     }
-
-    // Start listening for connection status after validating the code
-    _startConnectionListener();
-
-    setState(() {
-      _isLoading = false;
-    });
-  } catch (e) {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Connection failed: ${e.toString()}'),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
-}
 
   void _refreshCode() async {
     if (_shareLoading) return;

@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ConnectionMainStatus {
-  final bool connectedStatus;
-  final String mainTokenId;
-  final String mainLastTimestamp;
-  final bool mainOnlineStatus;
+  final bool       connectedStatus;
+  final String     mainTokenId;
+  final Timestamp? mainLastTimestamp;   // ← Firestore Timestamp (nullable)
+  final bool       mainOnlineStatus;
 
   ConnectionMainStatus({
     required this.connectedStatus,
@@ -13,20 +15,19 @@ class ConnectionMainStatus {
 
   factory ConnectionMainStatus.fromJson(Map<String, dynamic> json) {
     return ConnectionMainStatus(
-      connectedStatus: json['connected_status'] ?? false,
-      mainLastTimestamp: json['main_last_timestamp'] ?? '',
-      mainOnlineStatus: json['main_online_status'] ?? false,
-      mainTokenId: json['main_token_id'] ?? '',
+      connectedStatus   : json['connected_status']   ?? false,
+      mainLastTimestamp : json['main_last_timestamp'] as Timestamp?,
+      mainOnlineStatus  : json['main_online_status'] ?? false,
+      mainTokenId       : json['main_token_id']      ?? '',
     );
   }
 
-  // Method to convert the object to a map
   Map<String, dynamic> toJson() {
     return {
-      'connected_status': connectedStatus,
-      'main_last_timestamp': mainLastTimestamp,
-      'main_online_status': mainOnlineStatus,
-      'main_token_id': mainTokenId,
+      'connected_status'     : connectedStatus,
+      'main_last_timestamp'  : mainLastTimestamp,
+      'main_online_status'   : mainOnlineStatus,
+      'main_token_id'        : mainTokenId,
     };
   }
 }
