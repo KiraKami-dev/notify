@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/presentation/widgets/latest_notification_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:notify/presentation/notification/notification_detail_page.dart';
+import 'package:notify/presentation/favorites/favorites_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -318,78 +320,117 @@ class _HomePageState extends ConsumerState<HomePage> {
         ],
       ),
       endDrawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: theme.colorScheme.primary),
+              // decoration: BoxDecoration(
+              //   gradient: LinearGradient(
+              //     begin: Alignment.topLeft,
+              //     end: Alignment.bottomRight,
+              //     colors: [
+              //       theme.colorScheme.primary,
+              //       theme.colorScheme.primary.withOpacity(0.8),
+              //     ],
+              //   ),
+              // ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40),
-                  ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Text(
                     'Welcome!',
-                    style: TextStyle(
-                      color: theme.colorScheme.onPrimary,
-                      fontSize: 24,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.home_rounded),
+                    title: const Text('Home'),
+                    selected: true,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.history_rounded),
+                    title: const Text('History'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  NotificationDetailPage(userId: generatedCode),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.favorite_rounded),
+                    title: const Text('Favorites'),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'New',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const FavoritesPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading:
+                        _isLoading
+                            ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.error,
+                              ),
+                            )
+                            : Icon(
+                              Icons.logout_rounded,
+                              color: theme.colorScheme.error,
+                            ),
+                    title: Text(
+                      _isLoading ? 'Logging out...' : 'Logout',
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                    enabled: !_isLoading,
+                    onTap: () => _handleLogout(context),
                   ),
                 ],
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Home'),
-              selected: true,
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('History'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Navigate to history
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.favorite),
-              title: const Text('Favorites'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _showFavoritesOnly = !_showFavoritesOnly;
-                });
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading:
-                  _isLoading
-                      ? SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      )
-                      : Icon(
-                        Icons.logout,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-              title: Text(
-                _isLoading ? 'Logging out...' : 'Logout',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-              enabled: !_isLoading,
-              onTap: () => _handleLogout(context),
-            ),
+
+            const SizedBox(height: 8),
           ],
         ),
       ),
