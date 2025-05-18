@@ -109,281 +109,283 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
     final isKeyboardOpen = viewInsets.bottom > 0;
 
     return Dialog(
-      insetPadding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: isKeyboardOpen ? 8 : 16,
-        bottom: isKeyboardOpen ? 0 : 16,
-      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: isKeyboardOpen 
-              ? mediaQuery.size.height - viewInsets.bottom - 32
-              : 740,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Connect with Partner',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
+      child: SingleChildScrollView(
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: isKeyboardOpen 
+                ? mediaQuery.size.height - viewInsets.bottom - 100 // Give some breathing room
+                : 740,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Connect with Partner',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.help_outline,
-                          color: colorScheme.onSurface,
-                        ),
-                        onPressed: () => _showHelpDialog(context),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.close, color: colorScheme.onSurface),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Tab bar
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceVariant.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _activeTab = 0;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color:
-                              _activeTab == 0
-                                  ? colorScheme.surface
-                                  : Colors.transparent,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow:
-                              _activeTab == 0
-                                  ? [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                  : [],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Enter Code',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  _activeTab == 0
-                                      ? colorScheme.primary
-                                      : colorScheme.onSurfaceVariant,
-                            ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.help_outline,
+                            color: colorScheme.onSurface,
                           ),
+                          onPressed: () => _showHelpDialog(context),
                         ),
-                      ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: colorScheme.onSurface),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
                     ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _activeTab = 1;
-                        });
-                        // Generate new code when switching to Share Code tab
-                        if (_generatedCode == '--- ---') {
-                          _refreshCode();
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color:
-                              _activeTab == 1
-                                  ? colorScheme.surface
-                                  : Colors.transparent,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow:
-                              _activeTab == 1
-                                  ? [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                  : [],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Share Code',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color:
-                                  _activeTab == 1
-                                      ? colorScheme.primary
-                                      : colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            // Dynamic content
-            Expanded(
-              child: _activeTab == 0
-                  ? _buildEnterCodeTab(colorScheme)
-                  : _buildShareCodeTab(colorScheme),
-            ),
+              const SizedBox(height: 16),
 
-            // Bottom actions
-            Container(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 16,
-                bottom: isKeyboardOpen ? viewInsets.bottom + 16 : 16,
-              ),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed:
-                          (_isLoading || _shareLoading)
-                              ? null
-                              : () {
-                                if (_activeTab == 0) {
-                                  _connectWithPartner();
-                                } else {
-                                  // Allow generating new code if expired or no code exists
-                                  if (_timeLeft.isNegative ||
-                                      _generatedCode == '--- ---') {
-                                    _refreshCode();
-                                  }
-                                }
-                              },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            _activeTab == 0
-                                ? colorScheme.primary
-                                : (_timeLeft.isNegative ||
-                                        _generatedCode == '--- ---'
-                                    ? colorScheme.primary
-                                    : Colors.grey),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                        // Disable button only when loading or when code is active (not expired)
-                        disabledBackgroundColor:
-                            _activeTab == 1 &&
-                                    !_timeLeft.isNegative &&
-                                    _generatedCode != '--- ---'
-                                ? colorScheme.primary.withOpacity(0.6)
-                                : colorScheme.surfaceVariant,
-                      ),
-                      child:
-                          _isLoading || _shareLoading
-                              ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                              : Text(
-                                _activeTab == 0
-                                    ? 'Connect'
-                                    : (_timeLeft.isNegative ||
-                                            _generatedCode == '--- ---'
-                                        ? 'Generate New Code'
-                                        : 'Code Active'),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Having trouble?',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      GestureDetector(
+              // Tab bar
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceVariant.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
                         onTap: () {
-                          _showTroubleshootingDialog(context);
+                          setState(() {
+                            _activeTab = 0;
+                          });
                         },
-                        child: Text(
-                          'Get help',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color:
+                                _activeTab == 0
+                                    ? colorScheme.surface
+                                    : Colors.transparent,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow:
+                                _activeTab == 0
+                                    ? [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                    : [],
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Enter Code',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    _activeTab == 0
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _activeTab = 1;
+                          });
+                          // Generate new code when switching to Share Code tab
+                          if (_generatedCode == '--- ---') {
+                            _refreshCode();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color:
+                                _activeTab == 1
+                                    ? colorScheme.surface
+                                    : Colors.transparent,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow:
+                                _activeTab == 1
+                                    ? [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                    : [],
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Share Code',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    _activeTab == 1
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Dynamic content
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.5,
+                  ),
+                  child: _activeTab == 0
+                      ? _buildEnterCodeTab(colorScheme)
+                      : _buildShareCodeTab(colorScheme),
+                ),
+              ),
+
+              // Bottom actions
+              Container(
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 16,
+                  bottom: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed:
+                            (_isLoading || _shareLoading)
+                                ? null
+                                : () {
+                                  if (_activeTab == 0) {
+                                    _connectWithPartner();
+                                  } else {
+                                    // Allow generating new code if expired or no code exists
+                                    if (_timeLeft.isNegative ||
+                                        _generatedCode == '--- ---') {
+                                      _refreshCode();
+                                    }
+                                  }
+                                },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              _activeTab == 0
+                                  ? colorScheme.primary
+                                  : (_timeLeft.isNegative ||
+                                          _generatedCode == '--- ---'
+                                      ? colorScheme.primary
+                                      : Colors.grey),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                          // Disable button only when loading or when code is active (not expired)
+                          disabledBackgroundColor:
+                              _activeTab == 1 &&
+                                      !_timeLeft.isNegative &&
+                                      _generatedCode != '--- ---'
+                                  ? colorScheme.primary.withOpacity(0.6)
+                                  : colorScheme.surfaceVariant,
+                        ),
+                        child:
+                            _isLoading || _shareLoading
+                                ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : Text(
+                                  _activeTab == 0
+                                      ? 'Connect'
+                                      : (_timeLeft.isNegative ||
+                                              _generatedCode == '--- ---'
+                                          ? 'Generate New Code'
+                                          : 'Code Active'),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Having trouble?',
                           style: TextStyle(
                             fontSize: 14,
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () {
+                            _showTroubleshootingDialog(context);
+                          },
+                          child: Text(
+                            'Get help',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -393,6 +395,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
     return Padding(
       padding: const EdgeInsets.all(24),
       child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -413,7 +416,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             // Code input field
             Container(
@@ -452,7 +455,6 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                             digits.length > 6 ? digits.substring(0, 6) : digits;
                       }
                     },
-                    tooltip: 'Paste from clipboard',
                   ),
                 ),
                 style: TextStyle(
@@ -475,7 +477,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             // Instructions
             Container(

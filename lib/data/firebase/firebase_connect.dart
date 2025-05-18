@@ -111,15 +111,16 @@ class FirebaseConnect {
     if (!isOnline) {
       await userDoc.update({
         'secondary_online_status': true,
-        'secondary_last_timestamp': DateTime.now().toIso8601String(),
+        'secondary_last_timestamp': Timestamp.now(),
         'secondary_token_id': tokenId,
+        'connected_status': true,
       });
     }
 
-    return true; // success (updated or already online)
+    return true; 
   } catch (e) {
-    // optionally log error here
-    return false; // failure
+    
+    return false;
   }
 }
 
