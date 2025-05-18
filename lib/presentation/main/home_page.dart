@@ -1,7 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/material.dart';
-// import 'package:carousel_slider/carousel_slider.dart';
 import 'package:notify/config/const_variables.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
 
@@ -17,11 +16,11 @@ class _HomePageState extends State<HomePage> {
   final _tokenController = TextEditingController();
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
+  final _pageController = PageController(viewportFraction: 0.85);
   bool _isLoading = false;
-  String? _partnerName;
+  String? _partnerStatus;
   String? _partnerToken;
   int _currentImageIndex = 0;
-  bool _isFavorite = false;
   bool _showFavoritesOnly = false;
 
   // Sample data - Replace with your actual data
@@ -31,21 +30,21 @@ class _HomePageState extends State<HomePage> {
       'title': 'Good Morning!',
       'message': 'Have a great day ahead!',
       'time': '8:00 AM',
-      'isFavorite': false,
+      'isFavorite': true,
     },
     {
       'image': 'https://picsum.photos/id/238/200/300',
       'title': 'Meeting Reminder',
       'message': 'Team meeting at 2 PM',
       'time': '1:30 PM',
-      'isFavorite': true,
+      'isFavorite': false,
     },
     {
       'image': 'https://picsum.photos/id/239/200/300',
       'title': 'Lunch Break',
       'message': 'Time for a healthy lunch!',
       'time': '12:00 PM',
-      'isFavorite': false,
+      'isFavorite': true,
     },
   ];
 
@@ -71,12 +70,22 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadPartnerInfo();
+    _pageController.addListener(() {
+      final page = _pageController.page?.round() ?? 0;
+      if (page != _currentImageIndex) {
+        setState(() {
+          _currentImageIndex = page;
+          _titleController.text = _carouselItems[page]['title'];
+          _messageController.text = _carouselItems[page]['message'];
+        });
+      }
+    });
   }
 
   Future<void> _loadPartnerInfo() async {
     await Future.delayed(const Duration(milliseconds: 500));
     setState(() {
-      _partnerName = null;
+      _partnerStatus = null;
       _partnerToken = null;
     });
   }
@@ -86,6 +95,7 @@ class _HomePageState extends State<HomePage> {
     _tokenController.dispose();
     _titleController.dispose();
     _messageController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -147,9 +157,11 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final availableHeight = screenHeight - MediaQuery.of(context).padding.top - kToolbarHeight;
 
     return Scaffold(
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text(
           'Notify',
@@ -227,7 +239,6 @@ class _HomePageState extends State<HomePage> {
               title: const Text('Logout'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement logout
               },
             ),
           ],
@@ -236,327 +247,246 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              _buildConnectionStatus(theme),
-              const SizedBox(height: 24),
-
-              // Notification Preview
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'Recent Notifications',
-                        style: theme.textTheme.titleLarge,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Recent Notifications Section
+                Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
                       ),
-                    ),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount:
-                          _showFavoritesOnly
-                              ? _notifications
-                                  .where((n) => n['isFavorite'])
-                                  .length
-                              : _notifications.length,
-                      itemBuilder: (context, index) {
-                        final notifications =
-                            _showFavoritesOnly
-                                ? _notifications
-                                    .where((n) => n['isFavorite'])
-                                    .toList()
-                                : _notifications;
-                        final notification = notifications[index];
-                        return ListTile(
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Latest Notifications',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                      ...List.generate(
+                        2,
+                        (index) => ListTile(
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              notification['image'],
-                              width: 50,
-                              height: 50,
+                              _notifications[index]['image'],
+                              width: 40,
+                              height: 40,
                               fit: BoxFit.cover,
                             ),
                           ),
-                          title: Text(notification['title']),
-                          subtitle: Text(notification['message']),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          title: Text(
+                            _notifications[index]['title'],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            _notifications[index]['message'],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Text(_notifications[index]['time']),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Carousel Section with Switch
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Image Gallery',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          Row(
                             children: [
-                              Text(notification['time']),
-                              IconButton(
-                                icon: Icon(
-                                  notification['isFavorite']
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color:
-                                      notification['isFavorite']
-                                          ? Colors.red
-                                          : null,
-                                ),
-                                onPressed: () => _toggleFavorite(index),
+                              Text(
+                                'Show Favorites',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                              Switch(
+                                value: _showFavoritesOnly,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _showFavoritesOnly = value;
+                                  });
+                                },
                               ),
                             ],
                           ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-
-              // Image Carousel
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                child: Column(
-                  children: [
-                    Carousel(
-                      controller: _carouselCtrl,
-                      height: 200,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentImageIndex = index;
-                          _titleController.text =
-                              _carouselItems[index]['title'];
-                          _messageController.text =
-                              _carouselItems[index]['message'];
-                        });
-                      },
-                      children:
-                          _carouselItems.map((item) {
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.network(
-                                    item['image'],
-                                    fit: BoxFit.cover,
-                                  ),
-                                  Container(
-                                    // gradient overlay
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black.withOpacity(0.7),
-                                        ],
+                    SizedBox(
+                      height: availableHeight * 0.3, // 30% of available height
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _showFavoritesOnly
+                            ? _carouselItems.where((item) => item['isFavorite'] ?? false).length
+                            : _carouselItems.length,
+                        itemBuilder: (context, index) {
+                          final items = _showFavoritesOnly
+                              ? _carouselItems.where((item) => item['isFavorite'] ?? false).toList()
+                              : _carouselItems;
+                          final item = items[index];
+                          return AnimatedScale(
+                            scale: _currentImageIndex == index ? 1.0 : 0.9,
+                            duration: const Duration(milliseconds: 200),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image.network(
+                                      item['image'],
+                                      fit: BoxFit.cover,
+                                    ),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.black.withOpacity(0.7),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  Positioned(
-                                    // fav button
-                                    bottom: 16,
-                                    right: 16,
-                                    child: IconButton(
-                                      icon: Icon(
-                                        _isFavorite
-                                            ? Icons.favorite
-                                            : Icons.favorite_border,
-                                        color: Colors.white,
+                                    Positioned(
+                                      bottom: 16,
+                                      right: 16,
+                                      child: IconButton(
+                                        icon: Icon(
+                                          item['isFavorite'] ?? false
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            item['isFavorite'] = !(item['isFavorite'] ?? false);
+                                          });
+                                        },
                                       ),
-                                      onPressed:
-                                          () => setState(() {
-                                            _isFavorite = !_isFavorite;
-                                          }),
                                     ),
-                                  ),
-                                ],
+                                    if (_currentImageIndex == index)
+                                      Positioned(
+                                        bottom: 16,
+                                        left: 16,
+                                        child: Text(
+                                          item['title'],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            );
-                          }).toList(),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
-              ),
 
-              if (_partnerToken == null)
-                TextFormField(
-                  controller: _tokenController,
-                  decoration: const InputDecoration(
-                    labelText: 'Recipient Token',
-                    hintText: 'Enter your partner\'s token',
-                    prefixIcon: Icon(Icons.key),
+                const SizedBox(height: 16),
+
+                // Message Fields
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Message Title',
+                            hintText: 'Enter a title for your message',
+                            prefixIcon: Icon(Icons.title),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a title';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _messageController,
+                          decoration: const InputDecoration(
+                            labelText: 'Your Message',
+                            hintText: 'Type your message here...',
+                            prefixIcon: Icon(Icons.message),
+                          ),
+                          maxLines: 2,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a message';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a token or connect with someone';
-                    }
-                    return null;
-                  },
                 ),
-              if (_partnerToken == null) const SizedBox(height: 16),
 
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Message Title',
-                  hintText: 'Enter a title for your message',
-                  prefixIcon: Icon(Icons.title),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              TextFormField(
-                controller: _messageController,
-                decoration: const InputDecoration(
-                  labelText: 'Your Message',
-                  hintText: 'Type your message here...',
-                  prefixIcon: Icon(Icons.message),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 4,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a message';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _sendMessage,
-                icon:
-                    _isLoading
-                        ? const SizedBox(
+                // Send Button
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _sendMessage,
+                  icon: _isLoading
+                      ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : const Icon(Icons.send),
-                label: Text(_isLoading ? 'Sending...' : 'Send Message'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 56),
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
+                      : const Icon(Icons.send),
+                  label: Text(_isLoading ? 'Sending...' : 'Send Message'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildConnectionStatus(ThemeData theme) {
-    if (_partnerName != null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: theme.colorScheme.primary,
-              radius: 24,
-              child: Text(
-                _partnerName![0].toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Connected with $_partnerName',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Send them a message!',
-                    style: TextStyle(
-                      color: theme.colorScheme.onPrimaryContainer.withOpacity(
-                        0.8,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceVariant,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            const Icon(Icons.people_outline, size: 48, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(
-              'Not connected yet',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tap the connect button in the top right to find someone',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => UserConnectionModal(),
-                );
-              },
-              icon: const Icon(Icons.person_add),
-              label: const Text('Connect Now'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 44),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
   }
 }
