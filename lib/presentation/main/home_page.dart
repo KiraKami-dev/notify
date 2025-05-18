@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/material.dart';
+// import 'package:carousel_slider/carousel_slider.dart';
 import 'package:notify/config/const_variables.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
 
@@ -19,6 +20,52 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = false;
   String? _partnerName;
   String? _partnerToken;
+  int _currentImageIndex = 0;
+  bool _isFavorite = false;
+  bool _showFavoritesOnly = false;
+
+  // Sample data - Replace with your actual data
+  final List<Map<String, dynamic>> _notifications = [
+    {
+      'image': 'https://picsum.photos/id/237/200/300',
+      'title': 'Good Morning!',
+      'message': 'Have a great day ahead!',
+      'time': '8:00 AM',
+      'isFavorite': false,
+    },
+    {
+      'image': 'https://picsum.photos/id/238/200/300',
+      'title': 'Meeting Reminder',
+      'message': 'Team meeting at 2 PM',
+      'time': '1:30 PM',
+      'isFavorite': true,
+    },
+    {
+      'image': 'https://picsum.photos/id/239/200/300',
+      'title': 'Lunch Break',
+      'message': 'Time for a healthy lunch!',
+      'time': '12:00 PM',
+      'isFavorite': false,
+    },
+  ];
+
+  final List<Map<String, dynamic>> _carouselItems = [
+    {
+      'image': 'https://picsum.photos/id/237/200/300',
+      'title': 'Good Morning!',
+      'message': 'Have a great day ahead!',
+    },
+    {
+      'image': 'https://picsum.photos/id/238/200/300',
+      'title': 'Meeting Reminder',
+      'message': 'Team meeting at 2 PM',
+    },
+    {
+      'image': 'https://picsum.photos/id/239/200/300',
+      'title': 'Lunch Break',
+      'message': 'Time for a healthy lunch!',
+    },
+  ];
 
   @override
   void initState() {
@@ -27,13 +74,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadPartnerInfo() async {
-    // This would normally load from your database
-    // For now, we'll just simulate a delay
     await Future.delayed(const Duration(milliseconds: 500));
-
-    // In a real app, you'd fetch this from Firestore or your backend
     setState(() {
-      _partnerName = null; // Set to null if no partner connected yet
+      _partnerName = null;
       _partnerToken = null;
     });
   }
@@ -44,6 +87,13 @@ class _HomePageState extends State<HomePage> {
     _titleController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  void _toggleFavorite(int index) {
+    setState(() {
+      _notifications[index]['isFavorite'] =
+          !_notifications[index]['isFavorite'];
+    });
   }
 
   Future<void> _sendMessage() async {
@@ -63,8 +113,7 @@ class _HomePageState extends State<HomePage> {
           'token': tokenId,
           'title': title,
           'body': message,
-          'image':
-              'https://firebasestorage.googleapis.com/v0/b/notifyuh.firebasestorage.app/o/assets%2Fhi_girl.jpg?alt=media&token=a1a45942-5dd7-43a8-9563-a83ede569144',
+          'image': _carouselItems[_currentImageIndex]['image'],
         }),
       );
 
@@ -72,9 +121,6 @@ class _HomePageState extends State<HomePage> {
         _showSnackBar('Message sent successfully!', Colors.green);
         _titleController.clear();
         _messageController.clear();
-
-        // In a real app, you'd also save this message to Firestore
-        // to maintain message history
       } else {
         throw 'Server returned status code: ${response.statusCode}';
       }
@@ -106,10 +152,10 @@ class _HomePageState extends State<HomePage> {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text(
-          'Connect',
+          'Notify',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         actions: [
           IconButton(
@@ -125,6 +171,68 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: theme.colorScheme.primary),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, size: 40),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Welcome!',
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimary,
+                      fontSize: 24,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              selected: true,
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('History'),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigate to history
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite),
+              title: const Text('Favorites'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _showFavoritesOnly = !_showFavoritesOnly;
+                });
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Implement logout
+              },
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -133,6 +241,152 @@ class _HomePageState extends State<HomePage> {
             children: [
               _buildConnectionStatus(theme),
               const SizedBox(height: 24),
+
+              // Notification Preview
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Recent Notifications',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                    ),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount:
+                          _showFavoritesOnly
+                              ? _notifications
+                                  .where((n) => n['isFavorite'])
+                                  .length
+                              : _notifications.length,
+                      itemBuilder: (context, index) {
+                        final notifications =
+                            _showFavoritesOnly
+                                ? _notifications
+                                    .where((n) => n['isFavorite'])
+                                    .toList()
+                                : _notifications;
+                        final notification = notifications[index];
+                        return ListTile(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              notification['image'],
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          title: Text(notification['title']),
+                          subtitle: Text(notification['message']),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(notification['time']),
+                              IconButton(
+                                icon: Icon(
+                                  notification['isFavorite']
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color:
+                                      notification['isFavorite']
+                                          ? Colors.red
+                                          : null,
+                                ),
+                                onPressed: () => _toggleFavorite(index),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              // Image Carousel
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  children: [
+                    Carousel(
+                      controller: _carouselCtrl,
+                      height: 200,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentImageIndex = index;
+                          _titleController.text =
+                              _carouselItems[index]['title'];
+                          _messageController.text =
+                              _carouselItems[index]['message'];
+                        });
+                      },
+                      children:
+                          _carouselItems.map((item) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.network(
+                                    item['image'],
+                                    fit: BoxFit.cover,
+                                  ),
+                                  Container(
+                                    // gradient overlay
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.7),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    // fav button
+                                    bottom: 16,
+                                    right: 16,
+                                    child: IconButton(
+                                      icon: Icon(
+                                        _isFavorite
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color: Colors.white,
+                                      ),
+                                      onPressed:
+                                          () => setState(() {
+                                            _isFavorite = !_isFavorite;
+                                          }),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+
               if (_partnerToken == null)
                 TextFormField(
                   controller: _tokenController,
@@ -149,6 +403,7 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               if (_partnerToken == null) const SizedBox(height: 16),
+
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -164,6 +419,7 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
               const SizedBox(height: 16),
+
               TextFormField(
                 controller: _messageController,
                 decoration: const InputDecoration(
@@ -181,6 +437,7 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
               const SizedBox(height: 32),
+
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _sendMessage,
                 icon:
