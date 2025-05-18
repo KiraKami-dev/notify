@@ -407,28 +407,26 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   SegmentedButton<bool>(
-                                    segments: const [
-                                      ButtonSegment<bool>(
-                                        value: false,
-                                        icon: Icon(Icons.grid_view),
-                                        label: Text('All'),
-                                      ),
-                                      ButtonSegment<bool>(
-                                        value: true,
-                                        icon: Icon(Icons.favorite),
-                                        label: Text('Favorites'),
-                                      ),
-                                    ],
-                                    selected: {_showFavoritesOnly},
-                                    onSelectionChanged: (Set<bool> newSelection) {
-                                      setState(() {
-                                        _showFavoritesOnly = newSelection.first;
-                                      });
-                                    },
-                                    style: ButtonStyle(
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  ),
+  segments: const [
+    ButtonSegment<bool>(
+      value: false,
+      icon: Icon(Icons.grid_view),
+      label: Text('All'),
+    ),
+    ButtonSegment<bool>(
+      value: true,
+      icon: Icon(Icons.favorite),
+      label: Text('Favorites'),
+    ),
+  ],
+  selected: {_showFavoritesOnly},
+  onSelectionChanged: (s) => setState(() => _showFavoritesOnly = s.first),
+  showSelectedIcon: false,   // ← mandatory to hide the tick
+  style: ButtonStyle(
+    visualDensity: VisualDensity.compact,
+  ),
+)
+,
                                 ],
                               ),
                             ),

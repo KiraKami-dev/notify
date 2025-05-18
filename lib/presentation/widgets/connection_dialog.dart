@@ -85,7 +85,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
               margin: const EdgeInsets.all(16),
             ),
           );
-          Navigator.of(context).pop();
+          // Navigator.of(context).pop();
         }
       });
     }

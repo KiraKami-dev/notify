@@ -41,51 +41,49 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return AppLifecycleHandler(
-      child: MaterialApp(
-        title: 'Connect',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.purpleAccent,
-            secondary: Colors.deepPurpleAccent,
-            brightness: Brightness.light,
+    return MaterialApp(
+      title: 'Connect',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.purpleAccent,
+          secondary: Colors.deepPurpleAccent,
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+        fontFamily: 'Poppins',
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
           ),
-          useMaterial3: true,
-          fontFamily: 'Poppins',
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: Colors.grey.shade100,
-            border: OutlineInputBorder(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 16,
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
             ),
           ),
         ),
-        // darkTheme: ThemeData(
-        //   colorScheme: ColorScheme.fromSeed(
-        //     seedColor: Colors.purpleAccent,
-        //     secondary: Colors.deepPurpleAccent,
-        //     brightness: Brightness.dark,
-        //   ),
-        //   useMaterial3: true,
-        //   fontFamily: 'Poppins',
-        // ),
-        // themeMode: ThemeMode.system,
-        home: const HomePage(),
       ),
+      // darkTheme: ThemeData(
+      //   colorScheme: ColorScheme.fromSeed(
+      //     seedColor: Colors.purpleAccent,
+      //     secondary: Colors.deepPurpleAccent,
+      //     brightness: Brightness.dark,
+      //   ),
+      //   useMaterial3: true,
+      //   fontFamily: 'Poppins',
+      // ),
+      // themeMode: ThemeMode.system,
+      home: const HomePage(),
     );
   }
 
