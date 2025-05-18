@@ -76,6 +76,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/appLogo.png
+    - assets/splash_screen.png
   #   - images/a_dot_ham.jpeg
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -114,8 +115,8 @@ flutter_launcher_icons:
   # see https://flutter.dev/to/font-from-package
 flutter_native_splash:
   color: "#ff5854"           # solid background
-  image: assets/appLogo.png  # 4× PNG (e.g. 512×512 → 2048×2048)
+  image: assets/splash_screen.png  # 4× PNG (e.g. 512×512 → 2048×2048)
   
   android_12:
-    image: assets/appLogo.png
+    image: assets/splash_screen.png
     color: "#ff5854"
