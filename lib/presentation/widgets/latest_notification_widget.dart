@@ -47,9 +47,8 @@ class _LatestNotificationsWidgetState
     // 1️⃣ Bail out quickly if userId is still blank / null
     if (widget.userId.isEmpty) {
       return Container(
-        // you can replace with SizedBox.shrink()
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(24),
+        margin: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
@@ -78,10 +77,9 @@ class _LatestNotificationsWidgetState
           .limit(2)
           .snapshots()
           .map(
-            (snapshot) =>
-                snapshot.docs
-                    .map((doc) => NotificationModel.fromDoc(doc))
-                    .toList(),
+            (snapshot) => snapshot.docs
+                .map((doc) => NotificationModel.fromDoc(doc))
+                .toList(),
           ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -96,8 +94,8 @@ class _LatestNotificationsWidgetState
 
         if (notifications.isEmpty) {
           return Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
@@ -111,14 +109,15 @@ class _LatestNotificationsWidgetState
             ),
             child: Center(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     IconlyLight.notification,
                     color: theme.colorScheme.primary,
                   ),
+                  const SizedBox(width: 8),
                   Text(
-                    'Send your first notification! ',
+                    'Send your first notification!',
                     style: theme.textTheme.titleMedium,
                   ),
                 ],
@@ -129,138 +128,139 @@ class _LatestNotificationsWidgetState
 
         final dayLabel = getDayLabel(notifications.first.timeStamp.toDate());
 
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 500),
-          child: Container(
-            key: ValueKey<String>(notifications.first.notificationId),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(dayLabel, style: theme.textTheme.titleMedium),
+                  ],
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(dayLabel, style: theme.textTheme.titleMedium),
-                    ],
-                  ),
-                ),
-                ...List.generate(notifications.length, (index) {
-                  final notif = notifications[index];
-                  final timeFormatted = DateFormat.jm().format(
-                    notif.timeStamp.toDate(),
-                  );
+              ),
+              Flexible(
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  itemCount: notifications.length,
+                  itemBuilder: (context, index) {
+                    final notif = notifications[index];
+                    final timeFormatted = DateFormat.jm().format(
+                      notif.timeStamp.toDate(),
+                    );
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: IntrinsicHeight(
-                        child: Row(
-                          children: [
-                            if (notif.stickerUrl.isNotEmpty)
-                              Container(
-                                width: 80,
-                                height: double.infinity,
-                                decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.horizontal(
-                                    left: Radius.circular(12),
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            children: [
+                              if (notif.stickerUrl.isNotEmpty)
+                                Container(
+                                  width: 75,
+                                  height: double.infinity,
+                                  decoration: BoxDecoration(
+                                    borderRadius: const BorderRadius.horizontal(
+                                      left: Radius.circular(12),
+                                    ),
+                                    image: DecorationImage(
+                                      image: NetworkImage(notif.stickerUrl),
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
-                                  image: DecorationImage(
-                                    image: NetworkImage(notif.stickerUrl),
-                                    fit: BoxFit.cover,
+                                )
+                              else
+                                Container(
+                                  width: 75,
+                                  height: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary.withOpacity(0.1),
+                                    borderRadius: const BorderRadius.horizontal(
+                                      left: Radius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.notifications,
+                                    size: 32,
+                                    color: Colors.grey,
                                   ),
                                 ),
-                              )
-                            else
-                              Container(
-                                width: 80,
-                                height: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withOpacity(
-                                    0.1,
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        notif.messageTitle,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        notif.messageBody,
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ),
-                                  borderRadius: const BorderRadius.horizontal(
-                                    left: Radius.circular(12),
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.notifications,
-                                  size: 40,
-                                  color: Colors.grey,
                                 ),
                               ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const SizedBox(height: 4),
                                     Text(
-                                      notif.messageTitle,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
+                                      timeFormatted,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        fontSize: 12,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      notif.messageBody,
-                                      style: theme.textTheme.bodyMedium,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  Text(
-                                    timeFormatted,
-                                    style: theme.textTheme.bodySmall,
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(2.0),
-                                    child: sentRecvIcon(
+                                    const SizedBox(height: 6),
+                                    sentRecvIcon(
                                       myType: myType,
                                       sentBy: notif.sentBy,
                                       theme: theme,
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }),
-              ],
-            ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },
