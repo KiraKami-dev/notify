@@ -56,8 +56,14 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
   StreamSubscription? _connectionListener;
 
   void _startConnectionListener() {
-    if (_generatedCode != '--- ---') {
-      _connectionListener = FirebaseConnect.listenToConnectionStatus(_generatedCode)
+    _connectionListener?.cancel(); // Cancel any existing listener
+    
+    final codeToListen = _activeTab == 1 
+        ? _generatedCode 
+        : _codeController.text.replaceAll(RegExp(r'[^0-9]'), '');
+        
+    if (codeToListen != '--- ---' && codeToListen.isNotEmpty) {
+      _connectionListener = FirebaseConnect.listenToConnectionStatus(codeToListen)
         .listen((isConnected) {
           if (isConnected && mounted) {
             // Show success message and close dialog
@@ -292,7 +298,11 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                                 }
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
+                          backgroundColor: _activeTab == 0
+                                    ? colorScheme.primary
+                                    : (_timeLeft.isNegative || _generatedCode == '--- ---'
+                                        ? colorScheme.primary
+                                        : Colors.grey) ,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -562,7 +572,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
         if (_timeLeft.isNegative) {
           _countdownTimer?.cancel();
           setState(() {
-            _generatedCode = '---- ----';
+            _generatedCode = '--- ---';
             _expiresAt = null;
             _shareLoading = false;
           });
@@ -575,6 +585,10 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
         _generatedCode = newCode;
         _shareLoading = false;
       });
+
+      // Start listening for connection status after generating the code
+      _startConnectionListener();
+
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -850,27 +864,14 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
         _codeController.clear();
         return;
       }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error checking code: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-      return;
-    }
 
-    setState(() {
-      _isLoading = true;
-    });
+      // Start listening for connection status after validating the code
+      _startConnectionListener();
 
-    try {
+      setState(() {
+        _isLoading = true;
+      });
+
       // Call the onConnect callback with the partner code
       await widget.onConnect(code);
       
