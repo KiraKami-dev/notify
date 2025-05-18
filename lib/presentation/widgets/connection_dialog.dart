@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:math';
+import 'package:notify/data/firebase/firebase_connect.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:notify/data/local_storage/shared_auth.dart';
 
-class UserConnectionModal extends StatefulWidget {
+class UserConnectionModal extends ConsumerStatefulWidget {
   final String mainTokenId;
   final Function(String partnerCode) onConnect;
 
@@ -13,15 +17,16 @@ class UserConnectionModal extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<UserConnectionModal> createState() => _UserConnectionModalState();
+  ConsumerState<ConsumerStatefulWidget> createState() =>
+      _UserConnectionModalState();
 }
 
-class _UserConnectionModalState extends State<UserConnectionModal>
+class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _activeTab = 0;
   final TextEditingController _codeController = TextEditingController();
-  late String _generatedCode;
+  // late String _generatedCode;
   bool _isSecureConnection = true;
   bool _isLoading = false;
 
@@ -34,19 +39,17 @@ class _UserConnectionModalState extends State<UserConnectionModal>
         setState(() {
           _activeTab = _tabController.index;
         });
+        // Generate code when switching to Share Code tab
+        if (_activeTab == 1 && _generatedCode == '--------') {
+          _refreshCode();
+        }
       }
     });
 
-    _generateUniqueCode();
-  }
-
-  void _generateUniqueCode() {
-    // Simple code generation logic (in real app, use more secure method)
-    final random = Random();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final randomPart = random.nextInt(9000) + 1000; // 4-digit number
-
-    _generatedCode = '${randomPart}-${timestamp % 10000}';
+    // Generate initial code if starting on Share Code tab
+    if (_activeTab == 1) {
+      _refreshCode();
+    }
   }
 
   @override
@@ -57,17 +60,23 @@ class _UserConnectionModalState extends State<UserConnectionModal>
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 600;
 
     return Dialog(
-      insetPadding: const EdgeInsets.all(16),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 16 : size.width * 0.2,
+        vertical: isSmallScreen ? 16 : size.height * 0.1,
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      // backgroundColor: colorScheme.surface,
-      child: SizedBox(
-        height: 740,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 600,
+          maxHeight: isSmallScreen ? size.height * 0.9 : 740,
+        ),
         child: Column(
           children: [
             Padding(
@@ -78,7 +87,7 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                   Text(
                     'Connect with Partner',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: isSmallScreen ? 16 : 18,
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurface,
                     ),
@@ -89,11 +98,16 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                         icon: Icon(
                           Icons.help_outline,
                           color: colorScheme.onSurface,
+                          size: isSmallScreen ? 22 : 24,
                         ),
                         onPressed: () => _showHelpDialog(context),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close, color: colorScheme.onSurface),
+                        icon: Icon(
+                          Icons.close, 
+                          color: colorScheme.onSurface,
+                          size: isSmallScreen ? 22 : 24,
+                        ),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
@@ -102,7 +116,7 @@ class _UserConnectionModalState extends State<UserConnectionModal>
               ),
             ),
 
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Tab bar and content
             Expanded(
@@ -110,7 +124,9 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                 children: [
                   // Custom tab switcher
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    margin: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 16 : 24,
+                    ),
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceVariant.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(30),
@@ -125,36 +141,33 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                               });
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding: EdgeInsets.symmetric(
+                                vertical: isSmallScreen ? 10 : 12,
+                              ),
                               decoration: BoxDecoration(
-                                color:
-                                    _activeTab == 0
-                                        ? colorScheme.surface
-                                        : Colors.transparent,
+                                color: _activeTab == 0 
+                                    ? colorScheme.surface 
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(30),
-                                boxShadow:
-                                    _activeTab == 0
-                                        ? [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.1,
-                                            ),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ]
-                                        : [],
+                                boxShadow: _activeTab == 0
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : [],
                               ),
                               child: Center(
                                 child: Text(
                                   'Enter Code',
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: isSmallScreen ? 14 : 16,
                                     fontWeight: FontWeight.w600,
-                                    color:
-                                        _activeTab == 0
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurfaceVariant,
+                                    color: _activeTab == 0
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -167,38 +180,39 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                               setState(() {
                                 _activeTab = 1;
                               });
+                              // Generate new code when switching to Share Code tab
+                              if (_generatedCode == '--------' || _timeLeft.isNegative) {
+                                _refreshCode();
+                              }
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding: EdgeInsets.symmetric(
+                                vertical: isSmallScreen ? 10 : 12,
+                              ),
                               decoration: BoxDecoration(
-                                color:
-                                    _activeTab == 1
-                                        ? colorScheme.surface
-                                        : Colors.transparent,
+                                color: _activeTab == 1
+                                    ? colorScheme.surface
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(30),
-                                boxShadow:
-                                    _activeTab == 1
-                                        ? [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.1,
-                                            ),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ]
-                                        : [],
+                                boxShadow: _activeTab == 1
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : [],
                               ),
                               child: Center(
                                 child: Text(
                                   'Share Code',
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: isSmallScreen ? 14 : 16,
                                     fontWeight: FontWeight.w600,
-                                    color:
-                                        _activeTab == 1
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurfaceVariant,
+                                    color: _activeTab == 1
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -211,18 +225,20 @@ class _UserConnectionModalState extends State<UserConnectionModal>
 
                   // Dynamic content
                   Expanded(
-                    child:
-                        _activeTab == 0
-                            ? _buildEnterCodeTab(colorScheme)
-                            : _buildShareCodeTab(colorScheme),
+                    child: _activeTab == 0
+                        ? _buildEnterCodeTab(colorScheme, isSmallScreen)
+                        : _buildShareCodeTab(colorScheme, isSmallScreen),
                   ),
                 ],
               ),
             ),
 
-            // Bottom actions (formerly bottomNavigationBar)
+            // Bottom actions
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 16 : 24,
+                vertical: isSmallScreen ? 12 : 16,
+              ),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 boxShadow: [
@@ -238,18 +254,20 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                 children: [
                   SizedBox(
                     width: double.infinity,
-                    height: 56,
+                    height: isSmallScreen ? 48 : 56,
                     child: ElevatedButton(
-                      onPressed:
-                          _isLoading
-                              ? null
-                              : () {
-                                if (_activeTab == 0) {
-                                  _connectWithPartner();
-                                } else {
+                      onPressed: (_isLoading || _shareLoading) 
+                          ? null 
+                          : () {
+                              if (_activeTab == 0) {
+                                _connectWithPartner();
+                              } else {
+                                // Only allow generating new code if current one is expired
+                                if (_timeLeft.isNegative) {
                                   _refreshCode();
                                 }
-                              },
+                              }
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colorScheme.primary,
                         foregroundColor: Colors.white,
@@ -258,36 +276,35 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                         ),
                         elevation: 0,
                       ),
-                      child:
-                          _isLoading
-                              ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                              : Text(
-                                _activeTab == 0
-                                    ? 'Connect'
-                                    : 'Generate New Code',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
+                      child: _isLoading || _shareLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
                               ),
+                            )
+                          : Text(
+                              _activeTab == 0
+                                  ? 'Connect'
+                                  : (_timeLeft.isNegative ? 'Generate New Code' : 'Code Active'),
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 16 : 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: isSmallScreen ? 8 : 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         'Having trouble?',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: isSmallScreen ? 12 : 14,
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -299,7 +316,7 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                         child: Text(
                           'Get help',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: isSmallScreen ? 12 : 14,
                             color: colorScheme.primary,
                             fontWeight: FontWeight.w500,
                           ),
@@ -316,16 +333,16 @@ class _UserConnectionModalState extends State<UserConnectionModal>
     );
   }
 
-  Widget _buildEnterCodeTab(ColorScheme colorScheme) {
+  Widget _buildEnterCodeTab(ColorScheme colorScheme, bool isSmallScreen) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Enter Partner Code',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: isSmallScreen ? 18 : 20,
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
             ),
@@ -333,9 +350,12 @@ class _UserConnectionModalState extends State<UserConnectionModal>
           const SizedBox(height: 8),
           Text(
             'Ask your partner to share their connection code with you',
-            style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: isSmallScreen ? 14 : 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: isSmallScreen ? 24 : 32),
 
           // Code input field
           Container(
@@ -350,7 +370,10 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 16 : 20,
+              vertical: 8,
+            ),
             child: TextField(
               controller: _codeController,
               decoration: InputDecoration(
@@ -362,7 +385,6 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                 suffixIcon: IconButton(
                   icon: Icon(Icons.paste, color: colorScheme.primary),
                   onPressed: () async {
-                    // Get clipboard data
                     final data = await Clipboard.getData(Clipboard.kTextPlain);
                     if (data != null && data.text != null) {
                       _codeController.text = data.text!;
@@ -372,7 +394,7 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                 ),
               ),
               style: TextStyle(
-                fontSize: 18,
+                fontSize: isSmallScreen ? 16 : 18,
                 fontWeight: FontWeight.w500,
                 color: colorScheme.onSurface,
                 letterSpacing: 1.2,
@@ -385,50 +407,59 @@ class _UserConnectionModalState extends State<UserConnectionModal>
             ),
           ),
 
-          const SizedBox(height: 32),
+          SizedBox(height: isSmallScreen ? 24 : 32),
 
           // Connection instructions
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.info_outline, color: colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Text(
-                      'How to connect',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, 
                         color: colorScheme.primary,
+                        size: isSmallScreen ? 20 : 24,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildInstructionStep(
-                  number: 1,
-                  text: 'Ask your partner to go to the "Share Code" tab',
-                  colorScheme: colorScheme,
-                ),
-                const SizedBox(height: 12),
-                _buildInstructionStep(
-                  number: 2,
-                  text: 'Have them share their unique code with you',
-                  colorScheme: colorScheme,
-                ),
-                const SizedBox(height: 12),
-                _buildInstructionStep(
-                  number: 3,
-                  text: 'Enter their code above and tap "Connect"',
-                  colorScheme: colorScheme,
-                ),
-              ],
+                      SizedBox(width: isSmallScreen ? 8 : 12),
+                      Text(
+                        'How to connect',
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 14 : 16,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isSmallScreen ? 12 : 16),
+                  _buildInstructionStep(
+                    number: 1,
+                    text: 'Ask your partner to go to the "Share Code" tab',
+                    colorScheme: colorScheme,
+                    isSmallScreen: isSmallScreen,
+                  ),
+                  SizedBox(height: isSmallScreen ? 8 : 12),
+                  _buildInstructionStep(
+                    number: 2,
+                    text: 'Have them share their unique code with you',
+                    colorScheme: colorScheme,
+                    isSmallScreen: isSmallScreen,
+                  ),
+                  SizedBox(height: isSmallScreen ? 8 : 12),
+                  _buildInstructionStep(
+                    number: 3,
+                    text: 'Enter their code above and tap "Connect"',
+                    colorScheme: colorScheme,
+                    isSmallScreen: isSmallScreen,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -440,13 +471,14 @@ class _UserConnectionModalState extends State<UserConnectionModal>
     required int number,
     required String text,
     required ColorScheme colorScheme,
+    required bool isSmallScreen,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: isSmallScreen ? 20 : 24,
+          height: isSmallScreen ? 20 : 24,
           decoration: BoxDecoration(
             color: colorScheme.primary,
             shape: BoxShape.circle,
@@ -457,32 +489,89 @@ class _UserConnectionModalState extends State<UserConnectionModal>
               style: TextStyle(
                 color: colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: isSmallScreen ? 12 : 14,
               ),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: isSmallScreen ? 8 : 12),
         Expanded(
           child: Text(
             text,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: isSmallScreen ? 12 : 14,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildShareCodeTab(ColorScheme colorScheme) {
+  // state
+  String _generatedCode = '--------';
+  bool _shareLoading = false;
+  DateTime? _expiresAt; // null = no active code
+  Timer? _countdownTimer;
+  Duration get _timeLeft =>
+      _expiresAt == null
+          ? Duration.zero
+          : _expiresAt!.difference(DateTime.now());
+
+  // call this from the UI
+  Future<void> _refreshShareCode() async {
+    final myTokenId = ref.read(getMainTokenIdProvider);
+    if (myTokenId.isEmpty) {
+      throw Exception('No token ID available');
+    }
+    
+    setState(() => _shareLoading = true);
+
+    try {
+      final newCode = await FirebaseConnect.createShareCode(
+        mainTokenId: myTokenId,
+      );
+
+      // start 10‑minute expiry
+      _countdownTimer?.cancel();
+      _expiresAt = DateTime.now().add(const Duration(minutes: 10));
+      _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        if (_timeLeft.isNegative) {
+          _countdownTimer?.cancel();
+          setState(() {
+            _generatedCode = '--------';
+            _expiresAt = null;
+            _shareLoading = false;
+          });
+        } else {
+          setState(() {});
+        }
+      });
+
+      setState(() {
+        _generatedCode = newCode;
+        _shareLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _shareLoading = false;
+      });
+      rethrow;
+    }
+  }
+
+  Widget _buildShareCodeTab(ColorScheme colorScheme, bool isSmallScreen) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Share Your Code',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: isSmallScreen ? 18 : 20,
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
             ),
@@ -490,15 +579,20 @@ class _UserConnectionModalState extends State<UserConnectionModal>
           const SizedBox(height: 8),
           Text(
             'Share this code with your partner to connect',
-            style: TextStyle(fontSize: 16, color: colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: isSmallScreen ? 14 : 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: isSmallScreen ? 24 : 32),
 
           // Code display
           Center(
             child: Container(
-              width: 280,
-              padding: const EdgeInsets.symmetric(vertical: 32),
+              width: isSmallScreen ? 240 : 280,
+              padding: EdgeInsets.symmetric(
+                vertical: isSmallScreen ? 24 : 32,
+              ),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(24),
@@ -513,29 +607,11 @@ class _UserConnectionModalState extends State<UserConnectionModal>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // QR Code (placeholder)
-                  // Container(
-                  //   width: 160,
-                  //   height: 160,
-                  //   decoration: BoxDecoration(
-                  //     color: colorScheme.surfaceVariant,
-                  //     borderRadius: BorderRadius.circular(16),
-                  //   ),
-                  //   child: Center(
-                  //     child: Icon(
-                  //       Icons.qr_code_2,
-                  //       size: 100,
-                  //       color: colorScheme.onSurfaceVariant,
-                  //     ),
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 24),
-
                   // Connection code
                   Text(
                     'Your Connection Code',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: isSmallScreen ? 12 : 14,
                       fontWeight: FontWeight.w500,
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -547,7 +623,7 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                       Text(
                         _generatedCode,
                         style: TextStyle(
-                          fontSize: 26,
+                          fontSize: isSmallScreen ? 22 : 26,
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
                           letterSpacing: 2,
@@ -574,31 +650,18 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                         },
                         child: Icon(
                           Icons.copy,
-                          size: 20,
+                          size: isSmallScreen ? 18 : 20,
                           color: colorScheme.primary,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-
-                  // Share options
-                  // Row(
-                  //   mainAxisAlignment: MainAxisAlignment.center,
-                  //   children: [
-                  //     _buildShareOption(Icons.message, 'SMS', colorScheme),
-                  //     const SizedBox(width: 16),
-                  //     _buildShareOption(Icons.email, 'Email', colorScheme),
-                  //     const SizedBox(width: 16),
-                  //     _buildShareOption(Icons.more_horiz, 'More', colorScheme),
-                  //   ],
-                  // ),
                 ],
               ),
             ),
           ),
 
-          const SizedBox(height: 32),
+          SizedBox(height: isSmallScreen ? 24 : 32),
 
           // Security options
           Container(
@@ -613,19 +676,23 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
             child: Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: isSmallScreen ? 40 : 44,
+                  height: isSmallScreen ? 40 : 44,
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.security, color: colorScheme.primary),
+                  child: Icon(
+                    Icons.security,
+                    color: colorScheme.primary,
+                    size: isSmallScreen ? 20 : 24,
+                  ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: isSmallScreen ? 12 : 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -633,7 +700,7 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                       Text(
                         'Secure Connection',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: isSmallScreen ? 14 : 16,
                           fontWeight: FontWeight.w500,
                           color: colorScheme.onSurface,
                         ),
@@ -642,7 +709,7 @@ class _UserConnectionModalState extends State<UserConnectionModal>
                       Text(
                         'Add additional verification',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: isSmallScreen ? 12 : 14,
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -665,66 +732,55 @@ class _UserConnectionModalState extends State<UserConnectionModal>
           const SizedBox(height: 16),
 
           // Expiration notice
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          if (_expiresAt != null)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 12 : 16,
+                vertical: isSmallScreen ? 6 : 8,
+              ),
               decoration: BoxDecoration(
-                color: colorScheme.secondaryContainer,
+                color: _timeLeft.isNegative
+                    ? colorScheme.errorContainer
+                    : colorScheme.secondaryContainer,
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.access_time,
-                    size: 16,
-                    color: colorScheme.secondary,
+                    _timeLeft.isNegative ? Icons.error_outline : Icons.timer,
+                    size: isSmallScreen ? 18 : 20,
+                    color: _timeLeft.isNegative
+                        ? colorScheme.error
+                        : colorScheme.secondary,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: isSmallScreen ? 6 : 8),
                   Text(
-                    'Code expires in 10 minutes',
+                    _timeLeft.isNegative
+                        ? 'Code Expired - Generate New Code'
+                        : 'Code expires in ${_timeLeft.inMinutes.remainder(60).toString().padLeft(2, '0')}:'
+                            '${_timeLeft.inSeconds.remainder(60).toString().padLeft(2, '0')}',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.secondary,
+                      fontSize: isSmallScreen ? 13 : 15,
                       fontWeight: FontWeight.w500,
+                      color: _timeLeft.isNegative
+                          ? colorScheme.error
+                          : colorScheme.secondary,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildShareOption(
-    IconData icon,
-    String label,
-    ColorScheme colorScheme,
-  ) {
-    return Column(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: IconButton(
-            icon: Icon(icon, color: colorScheme.primary),
-            onPressed: () {
-              // Handle share action
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-        ),
-      ],
     );
   }
 
@@ -779,24 +835,18 @@ class _UserConnectionModalState extends State<UserConnectionModal>
     });
   }
 
-  void _refreshCode() {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Simulate code regeneration
-    Future.delayed(const Duration(milliseconds: 800), () {
-      _generateUniqueCode();
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Show success message
+  void _refreshCode() async {
+    if (_shareLoading) return;
+    
+    try {
+      await _refreshShareCode();
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('New connection code generated'),
+          content: Text('Failed to generate code: ${e.toString()}'),
           duration: const Duration(seconds: 2),
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -804,7 +854,7 @@ class _UserConnectionModalState extends State<UserConnectionModal>
           margin: const EdgeInsets.all(16),
         ),
       );
-    });
+    }
   }
 
   void _showHelpDialog(BuildContext context) {
@@ -958,6 +1008,36 @@ class _UserConnectionModalState extends State<UserConnectionModal>
             text,
             style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShareOption(
+    IconData icon,
+    String label,
+    ColorScheme colorScheme,
+  ) {
+    return Column(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: Icon(icon, color: colorScheme.primary),
+            onPressed: () {
+              // Handle share action
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
         ),
       ],
     );
