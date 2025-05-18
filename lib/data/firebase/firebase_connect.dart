@@ -47,10 +47,10 @@ class FirebaseConnect {
     await usersCollection.doc(code).set({
       'connected_status': false,
       'main_last_timestamp': '',
-      'main_online_status': '',
+      'main_online_status': true,
       'main_token_id': mainTokenId,
       'secondary_last_timestamp': '',
-      'secondary_online_status': '',
+      'secondary_online_status': false,
       'secondary_token_id': '',
       'created_at': Timestamp.now(),
     });

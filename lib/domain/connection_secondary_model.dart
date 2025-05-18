@@ -1,7 +1,7 @@
 class ConnectionSecondaryStatus {
   final bool connectedStatus;
   final String secondaryLastTimestamp;
-  final String secondaryOnlineStatus;
+  final bool secondaryOnlineStatus;
   final String secondaryTokenId;
 
   ConnectionSecondaryStatus({
@@ -15,7 +15,7 @@ class ConnectionSecondaryStatus {
     return ConnectionSecondaryStatus(
       connectedStatus: json['connected_status'] ?? false,
       secondaryLastTimestamp: json['secondary_last_timestamp'] ?? '',
-      secondaryOnlineStatus: json['secondary_online_status'] ?? '',
+      secondaryOnlineStatus: json['secondary_online_status'] ?? false,
       secondaryTokenId: json['secondary_token_id'] ?? '',
     );
   }

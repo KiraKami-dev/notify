@@ -2,7 +2,7 @@ class ConnectionMainStatus {
   final bool connectedStatus;
   final String mainTokenId;
   final String mainLastTimestamp;
-  final String mainOnlineStatus;
+  final bool mainOnlineStatus;
 
   ConnectionMainStatus({
     required this.connectedStatus,
@@ -15,7 +15,7 @@ class ConnectionMainStatus {
     return ConnectionMainStatus(
       connectedStatus: json['connected_status'] ?? false,
       mainLastTimestamp: json['main_last_timestamp'] ?? '',
-      mainOnlineStatus: json['main_online_status'] ?? '',
+      mainOnlineStatus: json['main_online_status'] ?? false,
       mainTokenId: json['main_token_id'] ?? '',
     );
   }
