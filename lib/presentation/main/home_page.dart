@@ -10,6 +10,8 @@ import 'package:notify/domain/sticker_model.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/presentation/widgets/latest_notification_widget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -154,6 +156,115 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  Future<void> _handleLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(
+              Icons.logout,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(width: 8),
+            const Text('Confirm Logout'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to logout?',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This will delete all your notifications and disconnect from your partner.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Delete notifications subcollection
+      if (generatedCode.isNotEmpty) {
+        final notificationsRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(generatedCode)
+            .collection('notifications');
+        
+        final notifications = await notificationsRef.get();
+        for (final doc in notifications.docs) {
+          await doc.reference.delete();
+        }
+
+        // Delete the user document
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(generatedCode)
+            .delete();
+      }
+
+      // Clear all shared preferences except mainTokenId
+      final prefs = await SharedPreferences.getInstance();
+      final mainTokenId = prefs.getString('mainTokenId'); // Save mainTokenId
+      await prefs.clear(); // Clear everything
+      if (mainTokenId != null) {
+        await prefs.setString('mainTokenId', mainTokenId); // Restore mainTokenId
+      }
+
+      // Reset local state
+      setState(() {
+        connectedStatus = false;
+        generatedCode = "";
+        myType = "";
+        _partnerToken = null;
+        _partnerStatus = null;
+        stickerItems.forEach((sticker) => sticker.isFavorite = false);
+      });
+
+      if (mounted) {
+        _showSnackBar('Logged out successfully', Colors.green);
+        Navigator.pop(context); // Close drawer
+      }
+    } catch (error) {
+      _showSnackBar('Failed to logout: $error', Colors.red);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -238,11 +349,27 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () {
-                Navigator.pop(context);
-              },
+              leading: _isLoading 
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  )
+                : Icon(
+                    Icons.logout,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+              title: Text(
+                _isLoading ? 'Logging out...' : 'Logout',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              enabled: !_isLoading,
+              onTap: () => _handleLogout(context),
             ),
           ],
         ),

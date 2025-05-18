@@ -178,14 +178,15 @@ class _LatestNotificationsWidgetState
         ],
       ),
       child: Center(
-        child: Row(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               IconlyLight.notification,
+              size: 64,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(height: 18),
             Text(
               message ?? 'Connect to start receiving notifications',
               style: theme.textTheme.titleMedium,
