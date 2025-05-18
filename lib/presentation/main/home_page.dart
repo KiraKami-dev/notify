@@ -30,6 +30,7 @@ class _HomePageState extends State<HomePage> {
       'title': 'Good Morning!',
       'message': 'Have a great day ahead!',
       'time': '8:00 AM',
+      'sender': 'Alice',
       'isFavorite': true,
     },
     {
@@ -37,6 +38,7 @@ class _HomePageState extends State<HomePage> {
       'title': 'Meeting Reminder',
       'message': 'Team meeting at 2 PM',
       'time': '1:30 PM',
+      'sender': 'Bob',
       'isFavorite': false,
     },
     {
@@ -44,6 +46,7 @@ class _HomePageState extends State<HomePage> {
       'title': 'Lunch Break',
       'message': 'Time for a healthy lunch!',
       'time': '12:00 PM',
+      'sender': 'Charlie',
       'isFavorite': true,
     },
   ];
@@ -53,16 +56,19 @@ class _HomePageState extends State<HomePage> {
       'image': 'https://picsum.photos/id/237/200/300',
       'title': 'Good Morning!',
       'message': 'Have a great day ahead!',
+      'isFavorite': false,
     },
     {
       'image': 'https://picsum.photos/id/238/200/300',
       'title': 'Meeting Reminder',
       'message': 'Team meeting at 2 PM',
+      'isFavorite': false,
     },
     {
       'image': 'https://picsum.photos/id/239/200/300',
       'title': 'Lunch Break',
       'message': 'Time for a healthy lunch!',
+      'isFavorite': false,
     },
   ];
 
@@ -80,6 +86,10 @@ class _HomePageState extends State<HomePage> {
         });
       }
     });
+
+    // Set initial text from first carousel item
+    _titleController.text = _carouselItems[0]['title'];
+    _messageController.text = _carouselItems[0]['message'];
   }
 
   Future<void> _loadPartnerInfo() async {
@@ -158,7 +168,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
-    final availableHeight = screenHeight - MediaQuery.of(context).padding.top - kToolbarHeight;
+    final availableHeight =
+        screenHeight - MediaQuery.of(context).padding.top - kToolbarHeight;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -248,7 +259,7 @@ class _HomePageState extends State<HomePage> {
         child: Form(
           key: _formKey,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8),
             child: Column(
               children: [
                 // Recent Notifications Section
@@ -269,96 +280,171 @@ class _HomePageState extends State<HomePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'Latest Notifications',
-                              style: theme.textTheme.titleMedium,
-                            ),
+                            Text('Today', style: theme.textTheme.titleMedium),
                           ],
                         ),
                       ),
                       ...List.generate(
                         2,
-                        (index) => ListTile(
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              _notifications[index]['image'],
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
+                        (index) => Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceVariant,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: IntrinsicHeight(
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: double.infinity,
+                                    decoration: BoxDecoration(
+                                      borderRadius:
+                                          const BorderRadius.horizontal(
+                                            left: Radius.circular(12),
+                                          ),
+                                      image: DecorationImage(
+                                        image: NetworkImage(
+                                          _notifications[index]['image'],
+                                        ),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _notifications[index]['title'],
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _notifications[index]['message'],
+                                            style: theme.textTheme.bodyMedium,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceAround,
+                                      children: [
+                                        Text(
+                                          _notifications[index]['time'],
+                                          style: theme.textTheme.bodySmall,
+                                        ),
+                                        Text(
+                                          _notifications[index]['sender'],
+                                          style: TextStyle(
+                                            color: theme.colorScheme.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          title: Text(
-                            _notifications[index]['title'],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            _notifications[index]['message'],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: Text(_notifications[index]['time']),
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
 
                 // Carousel Section with Switch
                 Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    Container(
+                      width: 242,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      // decoration: BoxDecoration(
+                      //   color: theme.colorScheme.surfaceVariant,
+                      //   borderRadius: BorderRadius.circular(12),
+                      // ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            'Image Gallery',
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                'Show Favorites',
-                                style: theme.textTheme.bodySmall,
+                          SegmentedButton<bool>(
+                            segments: const [
+                              ButtonSegment<bool>(
+                                value: false,
+                                icon: Icon(Icons.grid_view),
+                                label: Text('All'),
                               ),
-                              Switch(
-                                value: _showFavoritesOnly,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _showFavoritesOnly = value;
-                                  });
-                                },
+                              ButtonSegment<bool>(
+                                value: true,
+                                icon: Icon(Icons.favorite),
+                                label: Text('Favorites'),
                               ),
                             ],
+                            selected: {_showFavoritesOnly},
+                            onSelectionChanged: (Set<bool> newSelection) {
+                              setState(() {
+                                _showFavoritesOnly = newSelection.first;
+                              });
+                            },
+                            style: ButtonStyle(
+                              visualDensity: VisualDensity.compact,
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 8),
                     SizedBox(
-                      height: availableHeight * 0.3, // 30% of available height
+                      height: availableHeight * 0.3,
                       child: PageView.builder(
                         controller: _pageController,
-                        itemCount: _showFavoritesOnly
-                            ? _carouselItems.where((item) => item['isFavorite'] ?? false).length
-                            : _carouselItems.length,
+                        itemCount:
+                            _showFavoritesOnly
+                                ? _carouselItems
+                                    .where((item) => item['isFavorite'])
+                                    .length
+                                : _carouselItems.length,
                         itemBuilder: (context, index) {
-                          final items = _showFavoritesOnly
-                              ? _carouselItems.where((item) => item['isFavorite'] ?? false).toList()
-                              : _carouselItems;
+                          final items =
+                              _showFavoritesOnly
+                                  ? _carouselItems
+                                      .where((item) => item['isFavorite'])
+                                      .toList()
+                                  : _carouselItems;
                           final item = items[index];
                           return AnimatedScale(
                             scale: _currentImageIndex == index ? 1.0 : 0.9,
                             duration: const Duration(milliseconds: 200),
                             child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 5.0,
+                              ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
                                 child: Stack(
@@ -368,48 +454,38 @@ class _HomePageState extends State<HomePage> {
                                       item['image'],
                                       fit: BoxFit.cover,
                                     ),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [
-                                            Colors.transparent,
-                                            Colors.black.withOpacity(0.7),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
                                     Positioned(
-                                      bottom: 16,
-                                      right: 16,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          item['isFavorite'] ?? false
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          color: Colors.white,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            item['isFavorite'] = !(item['isFavorite'] ?? false);
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    if (_currentImageIndex == index)
-                                      Positioned(
-                                        bottom: 16,
-                                        left: 16,
-                                        child: Text(
-                                          item['title'],
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
+                                      top: 8,
+                                      right: 8,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: theme.colorScheme.surface
+                                              .withOpacity(0.8),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
                                           ),
                                         ),
+                                        child: IconButton(
+                                          icon: Icon(
+                                            item['isFavorite']
+                                                ? Icons.favorite
+                                                : Icons.favorite_border,
+                                            color:
+                                                item['isFavorite']
+                                                    ? Colors.red
+                                                    : theme
+                                                        .colorScheme
+                                                        .onSurface,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              item['isFavorite'] =
+                                                  !item['isFavorite'];
+                                            });
+                                          },
+                                        ),
                                       ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -425,41 +501,59 @@ class _HomePageState extends State<HomePage> {
 
                 // Message Fields
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _titleController,
-                          decoration: const InputDecoration(
-                            labelText: 'Message Title',
-                            hintText: 'Enter a title for your message',
-                            prefixIcon: Icon(Icons.title),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // how tall are the non‑message widgets (title + gap)?
+                      const _titleHeight = 56.0; // TextFormField default
+                      const _gap = 12.0;
+                      const _btnHeight = 56.0; // send button, below this column
+                      const _padding = 32.0; // top/bottom padding you added
+                      final remaining =
+                          constraints.maxHeight -
+                          (_titleHeight + _gap + _btnHeight + _padding);
+
+                      final bool canExpand =
+                          remaining > 120; // you decide the threshold
+
+                      return Column(
+                        children: [
+                          TextFormField(
+                            controller: _titleController,
+                            decoration: const InputDecoration(
+                              labelText: 'Message Title',
+                              hintText: 'Enter a title for your message',
+                              prefixIcon: Icon(Icons.title),
+                            ),
+                            validator:
+                                (v) =>
+                                    (v == null || v.isEmpty)
+                                        ? 'Please enter a title'
+                                        : null,
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a title';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _messageController,
-                          decoration: const InputDecoration(
-                            labelText: 'Your Message',
-                            hintText: 'Type your message here...',
-                            prefixIcon: Icon(Icons.message),
+                          const SizedBox(height: 12),
+
+                          // ── message field ──
+                          TextFormField(
+                            controller: _messageController,
+                            decoration: const InputDecoration(
+                              labelText: 'Your Message',
+                              hintText: 'Type your message here…',
+                              prefixIcon: Icon(Icons.message),
+                              alignLabelWithHint: true,
+                            ),
+                            keyboardType: TextInputType.multiline,
+                            expands: canExpand,
+                            minLines: canExpand ? null : 2,
+                            maxLines: canExpand ? null : 2,
+                            validator:
+                                (v) =>
+                                    (v == null || v.isEmpty)
+                                        ? 'Please enter a message'
+                                        : null,
                           ),
-                          maxLines: 2,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a message';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
+                        ],
+                      );
+                    },
                   ),
                 ),
 
@@ -468,13 +562,14 @@ class _HomePageState extends State<HomePage> {
                 // Send Button
                 ElevatedButton.icon(
                   onPressed: _isLoading ? null : _sendMessage,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.send),
+                  icon:
+                      _isLoading
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.send),
                   label: Text(_isLoading ? 'Sending...' : 'Send Message'),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 48),
