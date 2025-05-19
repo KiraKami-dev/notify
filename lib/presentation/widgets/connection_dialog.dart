@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:notify/data/firebase/firebase_connect.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserConnectionModal extends ConsumerStatefulWidget {
   const UserConnectionModal({
@@ -63,47 +64,68 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
             ? _generatedCode
             : _codeController.text.replaceAll(RegExp(r'[^0-9]'), '');
 
+    print('Starting connection listener for code: $codeToListen');
+
     if (codeToListen != '--- ---' && codeToListen.isNotEmpty) {
       _connectionListener = FirebaseConnect.listenToConnectionStatus(
         codeToListen,
       ).listen((isConnected) async {
+        print('Connection status changed: $isConnected');
         if (isConnected && mounted) {
           // Cancel the listener immediately to prevent multiple triggers
           _connectionListener?.cancel();
           
-          // Show success message and update state
-          ref.read(setGeneratedCodeProvider(generatedCode: codeToListen));
-          ref.read(setConnectedStatusProvider(status: true));
-          
-          final isMainUser = _activeTab == 1;
-          
-          if (isMainUser) {
-            // Update timestamp only once for main user
-            await FirebaseConnect.usersCollection.doc(codeToListen).update({
-              "main_last_timestamp": Timestamp.now(),
-            });
-          }
+          try {
+            // Show success message and update state
+            ref.read(setGeneratedCodeProvider(generatedCode: codeToListen));
+            ref.read(setConnectedStatusProvider(status: true));
+            
+            final isMainUser = _activeTab == 1;
+            
+            if (isMainUser) {
+              // Update timestamp only once for main user
+              await FirebaseConnect.usersCollection.doc(codeToListen).update({
+                "main_last_timestamp": Timestamp.now(),
+              });
+            }
 
-          ref.read(
-            setTypeUserProvider(
-              typeUser: isMainUser ? 'main' : 'secondary',
-            ),
-          );
-          
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Connection successful!'),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                margin: const EdgeInsets.all(16),
+            ref.read(
+              setTypeUserProvider(
+                typeUser: isMainUser ? 'main' : 'secondary',
               ),
             );
-            widget.fetch();
-            Navigator.of(context).pop(); // Close the dialog
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Connection successful!'),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  margin: const EdgeInsets.all(16),
+                ),
+              );
+              widget.fetch();
+              Navigator.of(context).pop(); // Close the dialog
+            }
+          } catch (e, stackTrace) {
+            print('Error in connection listener: $e');
+            print('Stack trace: $stackTrace');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error updating connection: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  margin: const EdgeInsets.all(16),
+                ),
+              );
+            }
           }
         }
       });
@@ -596,10 +618,71 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
           : _expiresAt!.difference(DateTime.now());
 
   // call this from the UI
+  Future<void> _refreshCode() async {
+    if (_shareLoading) return;
+
+    try {
+      final myTokenId = ref.read(getMainTokenIdProvider);
+      print('Current token ID for code generation: $myTokenId');
+
+      if (myTokenId.isEmpty) {
+        // Try to get the token from SharedPreferences directly
+        final prefs = await SharedPreferences.getInstance();
+        final storedToken = prefs.getString('mainTokenId');
+        print('Stored token from SharedPreferences: $storedToken');
+
+        if (storedToken != null && storedToken.isNotEmpty) {
+          // Update the provider with the stored token
+          ref.read(setMainTokenIdProvider(tokenId: storedToken));
+          print('Updated provider with stored token');
+          
+          // Now try to generate the code with the stored token
+          await _refreshShareCode();
+        } else {
+          // No token available, show error
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Unable to generate code. Please check your internet connection and try again.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                margin: const EdgeInsets.all(16),
+              ),
+            );
+          }
+        }
+      } else {
+        // Token exists in provider, proceed with code generation
+        await _refreshShareCode();
+      }
+    } catch (e, stackTrace) {
+      print('Error in _refreshCode: $e');
+      print('Stack trace: $stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate code: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _refreshShareCode() async {
     final myTokenId = ref.read(getMainTokenIdProvider);
+    print('Attempting to generate code with token: $myTokenId');
+    
     if (myTokenId.isEmpty) {
-      throw Exception('No token ID available');
+      throw Exception('No token ID available - Firebase Messaging not initialized');
     }
 
     setState(() => _shareLoading = true);
@@ -608,6 +691,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
       final newCode = await FirebaseConnect.createShareCode(
         mainTokenId: myTokenId,
       );
+      print('Generated new code: $newCode');
 
       // start 10‑minute expiry
       _countdownTimer?.cancel();
@@ -633,7 +717,9 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
 
       // Start listening for connection status after generating the code
       _startConnectionListener();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error generating code: $e');
+      print('Stack trace: $stackTrace');
       if (!mounted) return;
       setState(() {
         _shareLoading = false;
@@ -960,28 +1046,6 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Connection failed: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
-  }
-
-  void _refreshCode() async {
-    if (_shareLoading) return;
-
-    try {
-      await _refreshShareCode();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate code: ${e.toString()}'),
-          duration: const Duration(seconds: 2),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(

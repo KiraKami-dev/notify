@@ -44,69 +44,120 @@ class _HomePageState extends ConsumerState<HomePage> {
     _loadPartnerInfo();
   }
 
-  Future<void> loadFavorites() async {
-    final favIds = ref.read(getFavoriteIdsProvider); // no .future here
-    setState(() {
-      for (final s in stickerItems) {
-        s.isFavorite = favIds.contains(s.id);
-      }
-    });
-  }
-
   Future<void> _loadPartnerInfo() async {
-    final tempConnectionStatus = ref.read(getConnectedStatusProvider);
-    String code = ref.read(getGeneratedCodeProvider);
+    try {
+      print('Loading partner info...');
 
-    if (code.isNotEmpty) {
-      bool checkCode = await FirebaseConnect.codeExists(code);
+      // Initialize empty lists/values if null
+      stickerItems = stickerItems ?? [];
+      _partnerToken = _partnerToken ?? '';
+      myType = myType ?? '';
 
-      if (checkCode) {
-        setState(() {
-          connectedStatus = tempConnectionStatus;
-          generatedCode = code;
-        });
+      final tempConnectionStatus = ref.read(getConnectedStatusProvider);
+      String code = ref.read(getGeneratedCodeProvider) ?? '';
+      print('Connection status: $tempConnectionStatus, Code: $code');
+
+      if (code.isNotEmpty) {
+        bool checkCode = await FirebaseConnect.codeExists(code);
+        print('Code exists: $checkCode');
+
+        if (checkCode) {
+          setState(() {
+            connectedStatus = tempConnectionStatus;
+            generatedCode = code;
+          });
+        } else {
+          setState(() {
+            connectedStatus = false;
+            generatedCode = "";
+          });
+        }
       } else {
         setState(() {
           connectedStatus = false;
           generatedCode = "";
         });
       }
-    } else {
-      setState(() {
-        connectedStatus = false;
-        generatedCode = "";
-      });
-    }
 
-    if (connectedStatus) {
-      myType = ref.read(getTypeUserProvider);
-      String? partnerToken = await FirebaseConnect.fetchPartnerToken(
-        code: code,
-        typeUser: myType,
-      );
-      if (partnerToken != null && partnerToken.isNotEmpty) {
+      if (connectedStatus) {
+        myType = ref.read(getTypeUserProvider) ?? '';
+        String? partnerToken = await FirebaseConnect.fetchPartnerToken(
+          code: code,
+          typeUser: myType,
+        );
+        print('Partner token: $partnerToken');
+        if (partnerToken != null && partnerToken.isNotEmpty) {
+          setState(() {
+            _partnerToken = partnerToken;
+          });
+        }
+      }
+
+      print('Fetching stickers...');
+      try {
+        final fetchedStickers = await FirebaseStickers.fetchStickers();
+        if (fetchedStickers != null) {
+          stickerItems = fetchedStickers;
+          print('Stickers fetched: ${stickerItems.length}');
+        } else {
+          print('No stickers returned from Firebase');
+          stickerItems = [];
+        }
+      } catch (e) {
+        print('Error fetching stickers: $e');
+        stickerItems = [];
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
+
+      try {
+        await loadFavorites();
+      } catch (e) {
+        print('Error loading favorites: $e');
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
+
+      _pageController.addListener(() {
+        if (!mounted) return;
+        final page = _pageController.page?.round() ?? 0;
+        if (page != _currentImageIndex &&
+            stickerItems.isNotEmpty &&
+            page < stickerItems.length) {
+          setState(() {
+            _currentImageIndex = page;
+            _titleController.text = stickerItems[page].title ?? '';
+            _messageController.text = stickerItems[page].body ?? '';
+          });
+        }
+      });
+
+      // Set initial text from first carousel item
+      if (stickerItems.isNotEmpty) {
         setState(() {
-          _partnerToken = partnerToken;
+          _titleController.text = stickerItems[0].title ?? '';
+          _messageController.text = stickerItems[0].body ?? '';
         });
       }
-    }
-
-    stickerItems = await FirebaseStickers.fetchStickers();
-    await loadFavorites();
-    setState(() {});
-    _pageController.addListener(() {
-      final page = _pageController.page?.round() ?? 0;
-      if (page != _currentImageIndex) {
-        _currentImageIndex = page;
-        _titleController.text = stickerItems[page].title;
-        _messageController.text = stickerItems[page].body;
+    } catch (e, stackTrace) {
+      print('Error loading partner info: $e');
+      print('Stack trace: $stackTrace');
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading data: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+          ),
+        );
       }
-    });
-
-    // Set initial text from first carousel item
-    _titleController.text = stickerItems[0].title;
-    _messageController.text = stickerItems[0].body;
-    setState(() {});
+    }
   }
 
   @override
@@ -118,170 +169,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.dispose();
   }
 
-  Future<void> _sendMessage() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    final title = _titleController.text.trim();
-    final message = _messageController.text.trim();
-
-    try {
-      final response = await http.post(
-        Uri.parse(notificaiotnApiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'token': _partnerToken,
-          'title': title,
-          'body': message,
-          'image': stickerItems[_currentImageIndex].url,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        await FirebaseNotifications.addNotification(
-          targetUserId: generatedCode,
-          title: title,
-          body: message,
-          stickerId: stickerItems[_currentImageIndex].id,
-          stickerUrl: stickerItems[_currentImageIndex].url,
-          sentBy: myType,
-        );
-        _showSnackBar('Message sent successfully!', Colors.green);
-      } else {
-        throw 'Server returned status code: ${response.statusCode}';
-      }
-    } catch (error) {
-      _showSnackBar('Failed to send message', Colors.red);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _showSnackBar(String message, Color backgroundColor) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: backgroundColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
-  }
-
-  Future<void> _handleLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            title: Row(
-              children: [
-                Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
-                const SizedBox(width: 8),
-                const Text('Confirm Logout'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Are you sure you want to logout?',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'This will delete all your notifications and disconnect from your partner.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
-                ),
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Logout'),
-              ),
-            ],
-          ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      // Delete notifications subcollection
-      if (generatedCode.isNotEmpty) {
-        final notificationsRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(generatedCode)
-            .collection('notifications');
-
-        final notifications = await notificationsRef.get();
-        for (final doc in notifications.docs) {
-          await doc.reference.delete();
-        }
-
-        // Delete the user document
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(generatedCode)
-            .delete();
-      }
-
-      // Clear all shared preferences except mainTokenId
-      final prefs = await SharedPreferences.getInstance();
-      final mainTokenId = prefs.getString('mainTokenId'); // Save mainTokenId
-      await prefs.clear(); // Clear everything
-      if (mainTokenId != null) {
-        await prefs.setString(
-          'mainTokenId',
-          mainTokenId,
-        ); // Restore mainTokenId
-      }
-
-      // Reset local state
-      setState(() {
-        connectedStatus = false;
-        generatedCode = "";
-        myType = "";
-        _partnerToken = null;
-        _partnerStatus = null;
-        stickerItems.forEach((sticker) => sticker.isFavorite = false);
-      });
-
-      if (mounted) {
-        _showSnackBar('Logged out successfully', Colors.green);
-        Navigator.pop(context); // Close drawer
-      }
-    } catch (error) {
-      _showSnackBar('Failed to logout: $error', Colors.red);
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -291,149 +178,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        toolbarHeight: 50,
-        title: const Text(
-          'Notify',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: false,
-        elevation: 0,
-        actions: [
-          if (!connectedStatus)
-            IconButton(
-              icon: const Icon(Icons.person_add),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder:
-                      (context) => UserConnectionModal(
-                        fetch: () {
-                          _loadPartnerInfo();
-                        },
-                      ),
-                );
-              },
-              tooltip: 'Connect with someone',
-            ),
-        ],
-      ),
-      endDrawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              // decoration: BoxDecoration(
-              //   gradient: LinearGradient(
-              //     begin: Alignment.topLeft,
-              //     end: Alignment.bottomRight,
-              //     colors: [
-              //       theme.colorScheme.primary,
-              //       theme.colorScheme.primary.withOpacity(0.8),
-              //     ],
-              //   ),
-              // ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 12),
-                  Text(
-                    'Welcome!',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.home_rounded),
-                    title: const Text('Home'),
-                    selected: true,
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.history_rounded),
-                    title: const Text('History'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  NotificationDetailPage(userId: generatedCode),
-                        ),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.favorite_rounded),
-                    title: const Text('Favorites'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'New',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const FavoritesPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading:
-                        _isLoading
-                            ? SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: theme.colorScheme.error,
-                              ),
-                            )
-                            : Icon(
-                              Icons.logout_rounded,
-                              color: theme.colorScheme.error,
-                            ),
-                    title: Text(
-                      _isLoading ? 'Logging out...' : 'Logout',
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                    enabled: !_isLoading,
-                    onTap: () => _handleLogout(context),
-                  ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -678,6 +423,328 @@ class _HomePageState extends ConsumerState<HomePage> {
           ],
         ),
       ),
+      appBar: AppBar(
+        toolbarHeight: 50,
+        title: const Text(
+          'Notify',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: false,
+        elevation: 0,
+        actions: [
+          if (!connectedStatus)
+            IconButton(
+              icon: const Icon(Icons.person_add),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder:
+                      (context) => UserConnectionModal(
+                        fetch: () {
+                          _loadPartnerInfo();
+                        },
+                      ),
+                );
+              },
+              tooltip: 'Connect with someone',
+            ),
+        ],
+      ),
+      endDrawer: Drawer(
+        child: Column(
+          children: [
+            DrawerHeader(
+              // decoration: BoxDecoration(
+              //   gradient: LinearGradient(
+              //     begin: Alignment.topLeft,
+              //     end: Alignment.bottomRight,
+              //     colors: [
+              //       theme.colorScheme.primary,
+              //       theme.colorScheme.primary.withOpacity(0.8),
+              //     ],
+              //   ),
+              // ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 12),
+                  Text(
+                    'Welcome!',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.home_rounded),
+                    title: const Text('Home'),
+                    selected: true,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.history_rounded),
+                    title: const Text('History'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  NotificationDetailPage(userId: generatedCode),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.favorite_rounded),
+                    title: const Text('Favorites'),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'New',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const FavoritesPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading:
+                        _isLoading
+                            ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.error,
+                              ),
+                            )
+                            : Icon(
+                              Icons.logout_rounded,
+                              color: theme.colorScheme.error,
+                            ),
+                    title: Text(
+                      _isLoading ? 'Logging out...' : 'Logout',
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                    enabled: !_isLoading,
+                    onTap: () => _handleLogout(context),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
+  }
+
+  Future<void> _sendMessage() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final title = _titleController.text.trim();
+    final message = _messageController.text.trim();
+
+    try {
+      final response = await http.post(
+        Uri.parse(notificaiotnApiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'token': _partnerToken,
+          'title': title,
+          'body': message,
+          'image': stickerItems[_currentImageIndex].url,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        await FirebaseNotifications.addNotification(
+          targetUserId: generatedCode,
+          title: title,
+          body: message,
+          stickerId: stickerItems[_currentImageIndex].id,
+          stickerUrl: stickerItems[_currentImageIndex].url,
+          sentBy: myType,
+        );
+        _showSnackBar('Message sent successfully!', Colors.green);
+      } else {
+        throw 'Server returned status code: ${response.statusCode}';
+      }
+    } catch (error) {
+      _showSnackBar('Failed to send message', Colors.red);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showSnackBar(String message, Color backgroundColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Future<void> loadFavorites() async {
+    try {
+      final favIds = ref.read(getFavoriteIdsProvider);
+      if (mounted) {
+        setState(() {
+          for (final s in stickerItems) {
+            s.isFavorite = favIds.contains(s.id);
+          }
+        });
+      }
+    } catch (e) {
+      print('Error in loadFavorites: $e');
+    }
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
+                const SizedBox(width: 8),
+                const Text('Confirm Logout'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Are you sure you want to logout?',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'This will delete all your notifications and disconnect from your partner.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Logout'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Delete notifications subcollection
+      if (generatedCode.isNotEmpty) {
+        final notificationsRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(generatedCode)
+            .collection('notifications');
+
+        final notifications = await notificationsRef.get();
+        for (final doc in notifications.docs) {
+          await doc.reference.delete();
+        }
+
+        // Delete the user document
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(generatedCode)
+            .delete();
+      }
+
+      // Clear all shared preferences except mainTokenId
+      final prefs = await SharedPreferences.getInstance();
+      final mainTokenId = prefs.getString('mainTokenId'); // Save mainTokenId
+      await prefs.clear(); // Clear everything
+      if (mainTokenId != null) {
+        await prefs.setString(
+          'mainTokenId',
+          mainTokenId,
+        ); // Restore mainTokenId
+      }
+
+      // Reset local state
+      setState(() {
+        connectedStatus = false;
+        generatedCode = "";
+        myType = "";
+        _partnerToken = null;
+        _partnerStatus = null;
+        stickerItems.forEach((sticker) => sticker.isFavorite = false);
+      });
+
+      if (mounted) {
+        _showSnackBar('Logged out successfully', Colors.green);
+        Navigator.pop(context); // Close drawer
+      }
+    } catch (error) {
+      _showSnackBar('Failed to logout: $error', Colors.red);
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 }

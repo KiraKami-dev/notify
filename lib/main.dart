@@ -7,22 +7,62 @@ import 'package:notify/data/local_notification/notification_service.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/presentation/lifecycle/app_life_cycle.dart';
 import 'package:notify/presentation/main/home_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Firebase Cloud Function URL
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    print('Initializing Firebase...');
+    await Firebase.initializeApp();
+    print('Firebase initialized');
 
-  await NotificationService.init();
+    print('Initializing notification service...');
+    await NotificationService.init();
+    print('Notification service initialized');
 
-  // Initialize SharedPreferences
-  await SharedPrefs().init();
+    print('Initializing shared preferences...');
+    await SharedPrefs().init();
+    print('Shared preferences initialized');
 
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    NotificationService.showForegroundNotification(message);
-  });
-  runApp(const ProviderScope(child: NotifyApp()));
+    print('Setting up Firebase Messaging...');
+    final messaging = FirebaseMessaging.instance;
+    
+    // Request notification permissions first
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+    print('Notification permission status: ${settings.authorizationStatus}');
+
+    // Get the token
+    final token = await messaging.getToken();
+    print('Firebase Messaging token: $token');
+
+    if (token != null) {
+      // Save token to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('mainTokenId', token);
+      print('Token saved to SharedPreferences');
+    } else {
+      print('Warning: Firebase token is null');
+    }
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Received foreground message');
+      NotificationService.showForegroundNotification(message);
+    });
+
+    runApp(const ProviderScope(child: NotifyApp()));
+  } catch (e, stackTrace) {
+    print('Error during initialization: $e');
+    print('Stack trace: $stackTrace');
+    // Still run the app even if there's an error
+    runApp(const ProviderScope(child: NotifyApp()));
+  }
 }
 
 class NotifyApp extends ConsumerStatefulWidget {
@@ -37,6 +77,30 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
   void initState() {
     super.initState();
     _initializeFirebaseMessaging();
+  }
+
+  Future<void> _initializeFirebaseMessaging() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.requestPermission();
+      print('Notification permission status: ${settings.authorizationStatus}');
+
+      final token = await messaging.getToken();
+      print('Reinitializing Firebase Messaging token: $token');
+
+      if (token != null) {
+        // Update both SharedPreferences and provider
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('mainTokenId', token);
+        ref.read(setMainTokenIdProvider(tokenId: token));
+        print('Token updated in both SharedPreferences and provider');
+      } else {
+        print('Warning: Firebase token is null during reinitialization');
+      }
+    } catch (e, stackTrace) {
+      print('Error initializing Firebase Messaging: $e');
+      print('Stack trace: $stackTrace');
+    }
   }
 
   @override
@@ -85,15 +149,5 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
       // themeMode: ThemeMode.system,
       home: const HomePage(),
     );
-  }
-
-  Future<void> _initializeFirebaseMessaging() async {
-    final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission();
-    final token = await messaging.getToken();
-
-    if (token != null) {
-      ref.read(setMainTokenIdProvider(tokenId: token));
-    }
   }
 }

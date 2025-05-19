@@ -16,12 +16,16 @@ class Sticker {
   });
 
   factory Sticker.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data()!;
+    final data = doc.data();
+    if (data == null) {
+      throw Exception('Document data is null');
+    }
+    
     return Sticker(
-      id: data['sticker_id'] as String,
+      id: data['sticker_id'] as String? ?? '',
       title: data['sticker_title'] as String? ?? '',
       body: data['sticker_body'] as String? ?? '',
-      url: data['sticker_url'] as String,
+      url: data['sticker_url'] as String? ?? '',
       isFavorite: false,  // default, will set later from prefs
     );
   }
