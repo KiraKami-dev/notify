@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:notify/data/local_notification/notification_service.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
-import 'package:notify/presentation/lifecycle/app_life_cycle.dart';
 import 'package:notify/presentation/main/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
