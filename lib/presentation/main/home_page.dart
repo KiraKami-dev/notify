@@ -902,7 +902,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               color: theme.colorScheme.error,
                             ),
                     title: Text(
-                      _isLoading ? 'Logging out...' : 'Logout',
+                      _isLoading ? 'Disconneting...' : 'Disconnet',
                       style: TextStyle(color: theme.colorScheme.error),
                     ),
                     enabled: !_isLoading,
@@ -1012,7 +1012,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               children: [
                 Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
                 const SizedBox(width: 8),
-                const Text('Confirm Logout'),
+                const Text('Confirm Disconnect'),
               ],
             ),
             content: Column(
@@ -1020,7 +1020,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Are you sure you want to logout?',
+                  'Are you sure you want to Disconnect?',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 8),
@@ -1048,7 +1048,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   foregroundColor: Theme.of(context).colorScheme.onError,
                 ),
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Logout'),
+                child: const Text('Disconnect'),
               ),
             ],
           ),
@@ -1104,7 +1104,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         Navigator.pop(context); // Close drawer
       }
     } catch (error) {
-      _showSnackBar('Failed to logout: $error', Colors.red);
+      _showSnackBar('Failed to Disconnect: $error', Colors.red);
     } finally {
       setState(() => _isLoading = false);
     }
