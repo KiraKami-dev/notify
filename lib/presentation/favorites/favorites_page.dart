@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:notify/data/firebase/firebase_stickers.dart';
+import 'package:notify/data/firebase/firebase_favorites.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
+import 'package:notify/data/providers/favorite_provider.dart';
 import 'package:notify/domain/sticker_model.dart';
 import 'package:notify/presentation/favorites/sticker_detail_page.dart';
 
@@ -14,7 +16,6 @@ class FavoritesPage extends ConsumerStatefulWidget {
 }
 
 class _FavoritesPageState extends ConsumerState<FavoritesPage> {
-  List<Sticker> _allStickers = [];
   List<Sticker> _favoriteStickers = [];
   bool _isLoading = true;
   String _searchQuery = '';
@@ -35,11 +36,12 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   Future<void> _loadStickers() async {
     setState(() => _isLoading = true);
     try {
-      final stickers = await FirebaseStickers.fetchStickers();
-      final favIds = ref.read(getFavoriteIdsProvider);
+      final favoriteStickers = await FirebaseFavorites.getFavoriteStickers(
+        ref.read(getGeneratedCodeProvider) ?? '',
+      );
       
       setState(() {
-        _allStickers = stickers;
+        _favoriteStickers = favoriteStickers;
         _updateFavoritesList();
       });
     } catch (e) {
@@ -50,10 +52,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   }
 
   void _updateFavoritesList() {
-    final favIds = ref.read(getFavoriteIdsProvider);
-    _favoriteStickers = _allStickers
+    _favoriteStickers = _favoriteStickers
         .where((sticker) => 
-          favIds.contains(sticker.id) && 
           sticker.title.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
   }
@@ -176,7 +176,10 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
                 sticker: sticker,
                 onUnfavorite: () async {
                   await ref.read(
-                    toggleFavoriteIdProvider(stickerId: sticker.id).future,
+                    toggleFavoriteProvider((
+                      sticker: sticker,
+                      isFavorite: false,
+                    )).future,
                   );
                   _updateFavoritesList();
                 },
@@ -241,7 +244,10 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
                         icon: const Icon(Icons.favorite, color: Colors.red),
                         onPressed: () async {
                           await ref.read(
-                            toggleFavoriteIdProvider(stickerId: sticker.id).future,
+                            toggleFavoriteProvider((
+                              sticker: sticker,
+                              isFavorite: false,
+                            )).future,
                           );
                           _updateFavoritesList();
                         },

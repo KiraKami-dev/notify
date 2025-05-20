@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:notify/config/const_variables.dart';
 import 'package:notify/data/firebase/firebase_connect.dart';
+import 'package:notify/data/firebase/firebase_favorites.dart';
 import 'package:notify/data/firebase/firebase_notification.dart';
 import 'package:notify/data/firebase/firebase_stickers.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
@@ -18,6 +19,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:notify/presentation/widgets/custom_sticker_dialog.dart';
 import 'package:notify/presentation/widgets/custom_sticker_view.dart';
+import 'package:notify/data/providers/favorite_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 enum StickerViewType { all, favorites, custom }
 
@@ -105,30 +108,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         }
       }
 
-      print('Fetching stickers...');
-      try {
-        final fetchedStickers = await FirebaseStickers.fetchStickers();
-        if (fetchedStickers != null) {
-          stickerItems = fetchedStickers;
-          print('Stickers fetched: ${stickerItems.length}');
-        } else {
-          print('No stickers returned from Firebase');
-          stickerItems = [];
-        }
-      } catch (e) {
-        print('Error fetching stickers: $e');
-        stickerItems = [];
-      }
-
-      if (mounted) {
-        setState(() {});
-      }
-
-      try {
-        await loadFavorites();
-      } catch (e) {
-        print('Error loading favorites: $e');
-      }
+      // Load initial stickers
+      await _loadInitialStickers();
 
       if (mounted) {
         setState(() {});
@@ -152,7 +133,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     } catch (e, stackTrace) {
       print('Error loading partner info: $e');
       print('Stack trace: $stackTrace');
-      // Show error to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -166,6 +146,24 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
+  Future<void> _loadInitialStickers() async {
+    try {
+      final fetchedStickers = await FirebaseStickers.fetchStickers();
+      if (fetchedStickers != null) {
+        setState(() {
+          stickerItems = fetchedStickers;
+        });
+        print('Stickers fetched: ${stickerItems.length}');
+      } else {
+        print('No stickers returned from Firebase');
+        stickerItems = [];
+      }
+    } catch (e) {
+      print('Error fetching stickers: $e');
+      stickerItems = [];
+    }
+  }
+
   @override
   void dispose() {
     _tokenController.dispose();
@@ -176,32 +174,45 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _loadFavoriteStickers() async {
-    // First load custom stickers if not already loaded
     if (customStickerItems.isEmpty && generatedCode.isNotEmpty) {
       await _loadCustomStickers();
     }
 
-    final favIds = ref.read(getFavoriteIdsProvider);
-    List<Sticker> favoriteStickers = [];
-
-    // First check custom stickers
-    for (final customSticker in customStickerItems) {
-      if (favIds.contains(customSticker.id)) {
-        favoriteStickers.add(customSticker);
-      }
-    }
-
-    // Then check regular stickers
-    for (final sticker in stickerItems) {
-      if (favIds.contains(sticker.id)) {
-        favoriteStickers.add(sticker);
-      }
-    }
-
+    final favoriteStickers = await FirebaseFavorites.getFavoriteStickers(generatedCode);
+    
     if (mounted) {
       setState(() {
         _favoriteStickers = favoriteStickers;
       });
+    }
+  }
+
+  Future<void> _loadCustomStickers() async {
+    if (generatedCode.isNotEmpty) {
+      try {
+        final fetchedCustomStickers = await FirebaseStickers.fetchCustomStickers(generatedCode);
+        final favoriteStickers = await FirebaseFavorites.getFavoriteStickers(generatedCode);
+        final favoriteIds = favoriteStickers.map((s) => s.id).toSet();
+        
+        // Update favorites in a single pass
+        for (var sticker in fetchedCustomStickers) {
+          sticker.isFavorite = favoriteIds.contains(sticker.id);
+        }
+        
+        if (mounted) {
+          setState(() {
+            customStickerItems = fetchedCustomStickers;
+          });
+        }
+        print('Custom stickers fetched: ${customStickerItems.length}');
+      } catch (e) {
+        print('Error fetching custom stickers: $e');
+        if (mounted) {
+          setState(() {
+            customStickerItems = [];
+          });
+        }
+      }
     }
   }
 
@@ -232,27 +243,6 @@ class _HomePageState extends ConsumerState<HomePage> {
         _titleController.text = '';
         _messageController.text = '';
       });
-    }
-  }
-
-  Future<void> _loadCustomStickers() async {
-    if (generatedCode.isNotEmpty) {
-      try {
-        final fetchedCustomStickers = await FirebaseStickers.fetchCustomStickers(generatedCode);
-        // Get favorite IDs
-        final favIds = ref.read(getFavoriteIdsProvider);
-        // Set isFavorite property for each custom sticker
-        for (var sticker in fetchedCustomStickers) {
-          sticker.isFavorite = favIds.contains(sticker.id);
-        }
-        setState(() {
-          customStickerItems = fetchedCustomStickers;
-        });
-        print('Custom stickers fetched: ${customStickerItems.length}');
-      } catch (e) {
-        print('Error fetching custom stickers: $e');
-        customStickerItems = [];
-      }
     }
   }
 
@@ -382,23 +372,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                   child: Stack(
                                                     fit: StackFit.expand,
                                                     children: [
-                                                      Image.network(
-                                                        item.url,
-                                                        fit: BoxFit.cover,
-                                                        errorBuilder: (context, error, stackTrace) {
-                                                          print('Error loading image: $error');
-                                                          return Container(
-                                                            color: Colors.grey[300],
-                                                            child: const Center(
-                                                              child: Icon(
-                                                                Icons.error_outline,
-                                                                color: Colors.grey,
-                                                                size: 40,
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
+                                                      _buildStickerImage(item.url),
                                                       Positioned(
                                                         top: 8,
                                                         right: 8,
@@ -417,8 +391,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                 item.isFavorite = !item.isFavorite;
                                                               });
                                                               await ref.read(
-                                                                toggleFavoriteIdProvider(stickerId: item.id).future,
+                                                                toggleFavoriteProvider((
+                                                                  sticker: item,
+                                                                  isFavorite: item.isFavorite,
+                                                                )).future,
                                                               );
+                                                              if (_currentViewType == StickerViewType.favorites) {
+                                                                await _loadFavoriteStickers();
+                                                              }
                                                               _updateMessageFields();
                                                             },
                                                           ),
@@ -467,23 +447,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                       child: Stack(
                                                         fit: StackFit.expand,
                                                         children: [
-                                                          Image.network(
-                                                            item.url,
-                                                            fit: BoxFit.cover,
-                                                            errorBuilder: (context, error, stackTrace) {
-                                                              print('Error loading image: $error');
-                                                              return Container(
-                                                                color: Colors.grey[300],
-                                                                child: const Center(
-                                                                  child: Icon(
-                                                                    Icons.error_outline,
-                                                                    color: Colors.grey,
-                                                                    size: 40,
-                                                                  ),
-                                                                ),
-                                                              );
-                                                            },
-                                                          ),
+                                                          _buildStickerImage(item.url),
                                                           Positioned(
                                                             top: 8,
                                                             right: 8,
@@ -502,9 +466,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                     item.isFavorite = !item.isFavorite;
                                                                   });
                                                                   await ref.read(
-                                                                    toggleFavoriteIdProvider(stickerId: item.id).future,
+                                                                    toggleFavoriteProvider((
+                                                                      sticker: item,
+                                                                      isFavorite: item.isFavorite,
+                                                                    )).future,
                                                                   );
-                                                                  await _loadFavoriteStickers();
+                                                                  if (_currentViewType == StickerViewType.favorites) {
+                                                                    await _loadFavoriteStickers();
+                                                                  }
                                                                   _updateMessageFields();
                                                                 },
                                                               ),
@@ -559,23 +528,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                 child: Stack(
                                                   fit: StackFit.expand,
                                                   children: [
-                                                    Image.network(
-                                                      item.url,
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder: (context, error, stackTrace) {
-                                                        print('Error loading image: $error');
-                                                        return Container(
-                                                          color: Colors.grey[300],
-                                                          child: const Center(
-                                                            child: Icon(
-                                                              Icons.error_outline,
-                                                              color: Colors.grey,
-                                                              size: 40,
-                                                            ),
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
+                                                    _buildStickerImage(item.url),
                                                     Positioned(
                                                       top: 8,
                                                       right: 8,
@@ -610,11 +563,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                       .isFavorite;
                                                             });
                                                             await ref.read(
-                                                              toggleFavoriteIdProvider(
-                                                                stickerId:
-                                                                    item.id,
-                                                              ).future,
+                                                              toggleFavoriteProvider((
+                                                                sticker: item,
+                                                                isFavorite: item.isFavorite,
+                                                              )).future,
                                                             );
+                                                            if (_currentViewType == StickerViewType.favorites) {
+                                                              await _loadFavoriteStickers();
+                                                            }
                                                             _updateMessageFields();
                                                           },
                                                         ),
@@ -1127,6 +1083,29 @@ class _HomePageState extends ConsumerState<HomePage> {
               _updateMessageFields(); // Update message fields with new sticker
             },
           ),
+    );
+  }
+
+  Widget _buildStickerImage(String url) {
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => Container(
+        color: Colors.grey[300],
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      errorWidget: (context, url, error) => Container(
+        color: Colors.grey[300],
+        child: const Center(
+          child: Icon(
+            Icons.error_outline,
+            color: Colors.grey,
+            size: 40,
+          ),
+        ),
+      ),
     );
   }
 }
