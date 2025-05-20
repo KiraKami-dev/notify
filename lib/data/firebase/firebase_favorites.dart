@@ -32,7 +32,7 @@ class FirebaseFavorites {
         .collection('users')
         .doc(userId)
         .collection('favoriteStickers')
-        .orderBy('timeStamp', descending: false);
+        .orderBy('timeStamp', descending: true);
 
     final snapshot = await favoritesRef.get();
     return snapshot.docs.map((doc) {
@@ -52,7 +52,7 @@ class FirebaseFavorites {
         .collection('users')
         .doc(userId)
         .collection('favoriteStickers')
-        .orderBy('timeStamp', descending: false)
+        .orderBy('timeStamp', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) {
               final data = doc.data();
