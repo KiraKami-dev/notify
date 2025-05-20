@@ -43,6 +43,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   StickerViewType _currentViewType = StickerViewType.all;
   bool connectedStatus = false;
   List<Sticker> stickerItems = [];
+  List<Sticker> customStickerItems = [];
   File? _customImage;
   final _imagePicker = ImagePicker();
 
@@ -58,6 +59,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       // Initialize empty lists/values if null
       stickerItems = stickerItems ?? [];
+      customStickerItems = customStickerItems ?? [];
       _partnerToken = _partnerToken ?? '';
       myType = myType ?? '';
 
@@ -111,9 +113,19 @@ class _HomePageState extends ConsumerState<HomePage> {
           print('No stickers returned from Firebase');
           stickerItems = [];
         }
+
+        // Fetch custom stickers
+        if (generatedCode.isNotEmpty) {
+          final fetchedCustomStickers = await FirebaseStickers.fetchCustomStickers(generatedCode);
+          setState(() {
+            customStickerItems = fetchedCustomStickers;
+          });
+          print('Custom stickers fetched: ${customStickerItems.length}');
+        }
       } catch (e) {
         print('Error fetching stickers: $e');
         stickerItems = [];
+        customStickerItems = [];
       }
 
       if (mounted) {
@@ -133,23 +145,17 @@ class _HomePageState extends ConsumerState<HomePage> {
       _pageController.addListener(() {
         if (!mounted) return;
         final page = _pageController.page?.round() ?? 0;
-        if (page != _currentImageIndex &&
-            stickerItems.isNotEmpty &&
-            page < stickerItems.length) {
+        if (page != _currentImageIndex) {
           setState(() {
             _currentImageIndex = page;
-            _titleController.text = stickerItems[page].title ?? '';
-            _messageController.text = stickerItems[page].body ?? '';
           });
+          _updateMessageFields();
         }
       });
 
       // Set initial text from first carousel item
       if (stickerItems.isNotEmpty) {
-        setState(() {
-          _titleController.text = stickerItems[0].title ?? '';
-          _messageController.text = stickerItems[0].body ?? '';
-        });
+        _updateMessageFields();
       }
     } catch (e, stackTrace) {
       print('Error loading partner info: $e');
@@ -175,6 +181,26 @@ class _HomePageState extends ConsumerState<HomePage> {
     _messageController.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _updateMessageFields() {
+    if (!mounted) return;
+    
+    final currentStickers = _currentViewType == StickerViewType.favorites
+        ? stickerItems.where((item) => item.isFavorite).toList()
+        : stickerItems;
+    
+    if (currentStickers.isNotEmpty && _currentImageIndex < currentStickers.length) {
+      setState(() {
+        _titleController.text = currentStickers[_currentImageIndex].title ?? '';
+        _messageController.text = currentStickers[_currentImageIndex].body ?? '';
+      });
+    } else {
+      setState(() {
+        _titleController.text = '';
+        _messageController.text = '';
+      });
+    }
   }
 
   @override
@@ -250,12 +276,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       ),
                                     ],
                                     selected: {_currentViewType},
-                                    onSelectionChanged: (
-                                      Set<StickerViewType> selected,
-                                    ) {
+                                    onSelectionChanged: (Set<StickerViewType> selected) {
                                       setState(() {
                                         _currentViewType = selected.first;
+                                        _currentImageIndex = 0;
                                       });
+                                      _updateMessageFields();
                                     },
                                     showSelectedIcon: false,
                                     style: ButtonStyle(
@@ -274,9 +300,61 @@ class _HomePageState extends ConsumerState<HomePage> {
                             const SizedBox(height: 8),
                             Expanded(
                               child: _currentViewType == StickerViewType.custom
-                                  ? CustomStickerView(
-                                      onAddPressed: () => _showCustomStickerDialog(context),
-                                    )
+                                  ? customStickerItems.isEmpty
+                                      ? CustomStickerView(
+                                          onAddPressed: () => _showCustomStickerDialog(context),
+                                        )
+                                      : PageView.builder(
+                                          controller: _pageController,
+                                          itemCount: customStickerItems.length,
+                                          itemBuilder: (context, index) {
+                                            final item = customStickerItems[index];
+                                            return AnimatedScale(
+                                              scale: _currentImageIndex == index ? 1.0 : 0.9,
+                                              duration: const Duration(milliseconds: 200),
+                                              child: Container(
+                                                margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                                                child: ClipRRect(
+                                                  borderRadius: BorderRadius.circular(16),
+                                                  child: Stack(
+                                                    fit: StackFit.expand,
+                                                    children: [
+                                                      Image.network(
+                                                        item.url,
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                                      Positioned(
+                                                        top: 8,
+                                                        right: 8,
+                                                        child: Container(
+                                                          decoration: BoxDecoration(
+                                                            color: theme.colorScheme.surface.withOpacity(0.8),
+                                                            borderRadius: BorderRadius.circular(20),
+                                                          ),
+                                                          child: IconButton(
+                                                            icon: Icon(
+                                                              item.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                                              color: item.isFavorite ? Colors.red : theme.colorScheme.onSurface,
+                                                            ),
+                                                            onPressed: () async {
+                                                              setState(() {
+                                                                item.isFavorite = !item.isFavorite;
+                                                              });
+                                                              await ref.read(
+                                                                toggleFavoriteIdProvider(stickerId: item.id).future,
+                                                              );
+                                                              _updateMessageFields();
+                                                            },
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        )
                                   : PageView.builder(
                                       controller: _pageController,
                                       itemCount:
@@ -362,6 +440,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                   item.id,
                                                             ).future,
                                                           );
+                                                          _updateMessageFields();
                                                         },
                                                       ),
                                                     ),
@@ -820,9 +899,11 @@ class _HomePageState extends ConsumerState<HomePage> {
       context: context,
       builder: (context) => CustomStickerDialog(
         userId: generatedCode,
-        onStickerCreated: (File image, String title, String message) {
+        onStickerCreated: (File image, String title, String message) async {
+          // Refresh custom stickers list
+          final fetchedCustomStickers = await FirebaseStickers.fetchCustomStickers(generatedCode);
           setState(() {
-            _customImage = image;
+            customStickerItems = fetchedCustomStickers;
             _titleController.text = title;
             _messageController.text = message;
           });

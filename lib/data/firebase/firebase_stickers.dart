@@ -40,8 +40,8 @@ class FirebaseStickers {
           .set({
         'sticker_id': customStickerId,
         'sticker_url': imageUrl,
-        'message_title': title,
-        'message_body': message,
+        'sticker_title': title,
+        'sticker_body': message,
         'timeStamp': Timestamp.now(),
       });
 
@@ -66,8 +66,8 @@ class FirebaseStickers {
         return Sticker(
           id: data['sticker_id'] as String,
           url: data['sticker_url'] as String,
-          title: data['message_title'] as String,
-          body: data['message_body'] as String,
+          title: data['sticker_title'] as String,
+          body: data['sticker_body'] as String,
           
         );
       }).toList();
