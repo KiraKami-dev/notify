@@ -115,20 +115,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           print('No stickers returned from Firebase');
           stickerItems = [];
         }
-
-        // Fetch custom stickers
-        if (generatedCode.isNotEmpty) {
-          final fetchedCustomStickers =
-              await FirebaseStickers.fetchCustomStickers(generatedCode);
-          setState(() {
-            customStickerItems = fetchedCustomStickers;
-          });
-          print('Custom stickers fetched: ${customStickerItems.length}');
-        }
       } catch (e) {
         print('Error fetching stickers: $e');
         stickerItems = [];
-        customStickerItems = [];
       }
 
       if (mounted) {
@@ -137,7 +126,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       try {
         await loadFavorites();
-        await _loadFavoriteStickers();
       } catch (e) {
         print('Error loading favorites: $e');
       }
@@ -188,6 +176,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _loadFavoriteStickers() async {
+    // First load custom stickers if not already loaded
+    if (customStickerItems.isEmpty && generatedCode.isNotEmpty) {
+      await _loadCustomStickers();
+    }
+
     final favIds = ref.read(getFavoriteIdsProvider);
     List<Sticker> favoriteStickers = [];
 
@@ -242,6 +235,27 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
+  Future<void> _loadCustomStickers() async {
+    if (generatedCode.isNotEmpty) {
+      try {
+        final fetchedCustomStickers = await FirebaseStickers.fetchCustomStickers(generatedCode);
+        // Get favorite IDs
+        final favIds = ref.read(getFavoriteIdsProvider);
+        // Set isFavorite property for each custom sticker
+        for (var sticker in fetchedCustomStickers) {
+          sticker.isFavorite = favIds.contains(sticker.id);
+        }
+        setState(() {
+          customStickerItems = fetchedCustomStickers;
+        });
+        print('Custom stickers fetched: ${customStickerItems.length}');
+      } catch (e) {
+        print('Error fetching custom stickers: $e');
+        customStickerItems = [];
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -264,7 +278,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     children: [
                       // Latest Notifications
                       SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.21,
+                        height: MediaQuery.of(context).size.height * 0.23,
                         child: LatestNotificationsWidget(userId: generatedCode),
                       ),
 
@@ -290,7 +304,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                         value: StickerViewType.all,
                                         icon: Icon(Icons.grid_view, size: 18),
                                         label: Text(
-                                          'All',
+                                          'Collection',
                                           style: TextStyle(fontSize: 12),
                                         ),
                                       ),
@@ -317,11 +331,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     selected: {_currentViewType},
                                     onSelectionChanged: (
                                       Set<StickerViewType> selected,
-                                    ) {
+                                    ) async {
                                       setState(() {
                                         _currentViewType = selected.first;
                                         _currentImageIndex = 0;
                                       });
+                                      
+                                      // Load data based on selected view type
+                                      if (_currentViewType == StickerViewType.custom) {
+                                        await _loadCustomStickers();
+                                      } else if (_currentViewType == StickerViewType.favorites) {
+                                        await _loadFavoriteStickers();
+                                      }
+                                      
                                       _updateMessageFields();
                                     },
                                     showSelectedIcon: false,
