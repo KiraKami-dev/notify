@@ -97,6 +97,9 @@ class _LatestNotificationsWidgetState
                       image: DecorationImage(
                         image: NetworkImage(notif.stickerUrl),
                         fit: BoxFit.cover,
+                        onError: (exception, stackTrace) {
+                          print('Error loading notification image: $exception');
+                        },
                       ),
                     ),
                   )

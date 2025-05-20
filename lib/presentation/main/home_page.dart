@@ -363,6 +363,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                       Image.network(
                                                         item.url,
                                                         fit: BoxFit.cover,
+                                                        errorBuilder: (context, error, stackTrace) {
+                                                          print('Error loading image: $error');
+                                                          return Container(
+                                                            color: Colors.grey[300],
+                                                            child: const Center(
+                                                              child: Icon(
+                                                                Icons.error_outline,
+                                                                color: Colors.grey,
+                                                                size: 40,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
                                                       ),
                                                       Positioned(
                                                         top: 8,
@@ -435,6 +448,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                           Image.network(
                                                             item.url,
                                                             fit: BoxFit.cover,
+                                                            errorBuilder: (context, error, stackTrace) {
+                                                              print('Error loading image: $error');
+                                                              return Container(
+                                                                color: Colors.grey[300],
+                                                                child: const Center(
+                                                                  child: Icon(
+                                                                    Icons.error_outline,
+                                                                    color: Colors.grey,
+                                                                    size: 40,
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            },
                                                           ),
                                                           Positioned(
                                                             top: 8,
@@ -514,6 +540,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                     Image.network(
                                                       item.url,
                                                       fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) {
+                                                        print('Error loading image: $error');
+                                                        return Container(
+                                                          color: Colors.grey[300],
+                                                          child: const Center(
+                                                            child: Icon(
+                                                              Icons.error_outline,
+                                                              color: Colors.grey,
+                                                              size: 40,
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
                                                     ),
                                                     Positioned(
                                                       top: 8,
@@ -870,8 +909,8 @@ class _HomePageState extends ConsumerState<HomePage> {
       String imageUrl = '';
       if (_currentViewType == StickerViewType.custom && _customImage != null) {
         // TODO: Implement image upload to Firebase Storage
-        // For now, we'll use a placeholder URL
-        imageUrl = 'https://placeholder.com/custom-image';
+        // Using a valid placeholder image URL for now
+        imageUrl = 'https://picsum.photos/200';
       } else {
         imageUrl = stickerItems[_currentImageIndex].url;
       }
