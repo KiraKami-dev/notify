@@ -270,15 +270,12 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.favorite,
-                          color: theme.colorScheme.primary,
-                          size: 32,
-                        ),
+                        
                         const SizedBox(width: 12),
                         Text(
-                          'Our Todo List',
+                          'Todo List',
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -569,31 +566,6 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                 },
                                 background: Container(
                                   alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.only(right: 24.0),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.error,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        'Delete',
-                                        style: TextStyle(
-                                          color: theme.colorScheme.onError,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Icon(
-                                        Icons.delete_outline,
-                                        color: theme.colorScheme.onError,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                secondaryBackground: Container(
-                                  alignment: Alignment.centerLeft,
                                   padding: const EdgeInsets.only(left: 24.0),
                                   decoration: BoxDecoration(
                                     color: theme.colorScheme.primary,
@@ -613,6 +585,31 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                           color: theme.colorScheme.onPrimary,
                                           fontWeight: FontWeight.bold,
                                         ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                secondaryBackground: Container(
+                                  alignment: Alignment.centerLeft,
+                                  padding: const EdgeInsets.only(right: 24.0),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.error,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'Delete',
+                                        style: TextStyle(
+                                          color: theme.colorScheme.onError,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Icon(
+                                        Icons.delete_outline,
+                                        color: theme.colorScheme.onError,
                                       ),
                                     ],
                                   ),
@@ -711,34 +708,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                         ],
                                       ),
                                       children: [
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              OutlinedButton.icon(
-                                                onPressed: () => _editTodo(todo.id),
-                                                icon: const Icon(Icons.edit_outlined),
-                                                label: const Text('Edit'),
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor: theme.colorScheme.primary,
-                                                ),
-                                              ),
-                                              OutlinedButton.icon(
-                                                onPressed: () async {
-                                                  if (await _confirmDismiss()) {
-                                                    _removeTodo(todo.id);
-                                                  }
-                                                },
-                                                icon: const Icon(Icons.delete_outline),
-                                                label: const Text('Delete'),
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor: theme.colorScheme.error,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                        
                                         if (todo.subtasks.isNotEmpty)
                                           ExpansionTile(
                                             title: Text(
