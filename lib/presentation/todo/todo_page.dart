@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:notify/models/todo_item.dart';
 import 'package:notify/data/firebase/firebase_todo.dart';
+import 'package:notify/data/local_notification/notification_service.dart';
 
 class TodoPage extends ConsumerStatefulWidget {
   final String userId;
@@ -98,6 +99,18 @@ class _TodoPageState extends ConsumerState<TodoPage> {
         userId: widget.userId,
         todo: todo,
       );
+      
+      // Schedule notification for the new todo
+      if (todo.dueDate != null) {
+        await NotificationService.scheduleTaskNotification(
+          userId: widget.userId,
+          taskId: todo.id,
+          title: todo.title,
+          scheduledTime: todo.dueDate!,
+          description: 'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
+        );
+      }
+      
       _todoController.clear();
     }
   }
@@ -162,6 +175,16 @@ class _TodoPageState extends ConsumerState<TodoPage> {
         userId: widget.userId,
         todo: todo,
       );
+      
+      // Update notification when date is changed
+      await NotificationService.cancelTaskNotification(todo.id);
+      await NotificationService.scheduleTaskNotification(
+        userId: widget.userId,
+        taskId: todo.id,
+        title: todo.title,
+        scheduledTime: todo.dueDate!,
+        description: 'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
+      );
     }
   }
 
@@ -217,6 +240,19 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                   userId: widget.userId,
                   todo: todo,
                 );
+                
+                // Update notification for the edited todo
+                if (todo.dueDate != null) {
+                  await NotificationService.cancelTaskNotification(todo.id);
+                  await NotificationService.scheduleTaskNotification(
+                    userId: widget.userId,
+                    taskId: todo.id,
+                    title: todo.title,
+                    scheduledTime: todo.dueDate!,
+                    description: 'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
+                  );
+                }
+                
                 Navigator.pop(context);
               }
             },
@@ -662,13 +698,27 @@ class _TodoPageState extends ConsumerState<TodoPage> {
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Notification feature coming soon!'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                onPressed: () async {
+                  if (todo.dueDate != null) {
+                    await NotificationService.showTaskReminder(
+                      userId: widget.userId,
+                      title: todo.title,
+                      description: 'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Reminder sent!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please set a due date first!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
                 },
               ),
               IconButton(
