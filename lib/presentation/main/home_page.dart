@@ -8,6 +8,7 @@ import 'package:notify/data/firebase/firebase_notification.dart';
 import 'package:notify/data/firebase/firebase_stickers.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/domain/sticker_model.dart';
+import 'package:notify/presentation/todo/todo_page.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/presentation/widgets/latest_notification_widget.dart';
@@ -37,6 +38,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
   final _pageController = PageController(viewportFraction: 0.85);
+  final _mainPageController = PageController();
   bool _isLoading = false;
   String? _partnerStatus;
   String? _partnerToken;
@@ -170,6 +172,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     _titleController.dispose();
     _messageController.dispose();
     _pageController.dispose();
+    _mainPageController.dispose();
     super.dispose();
   }
 
@@ -178,8 +181,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       await _loadCustomStickers();
     }
 
-    final favoriteStickers = await FirebaseFavorites.getFavoriteStickers(generatedCode);
-    
+    final favoriteStickers = await FirebaseFavorites.getFavoriteStickers(
+      generatedCode,
+    );
+
     if (mounted) {
       setState(() {
         _favoriteStickers = favoriteStickers;
@@ -190,15 +195,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _loadCustomStickers() async {
     if (generatedCode.isNotEmpty) {
       try {
-        final fetchedCustomStickers = await FirebaseStickers.fetchCustomStickers(generatedCode);
-        final favoriteStickers = await FirebaseFavorites.getFavoriteStickers(generatedCode);
+        final fetchedCustomStickers =
+            await FirebaseStickers.fetchCustomStickers(generatedCode);
+        final favoriteStickers = await FirebaseFavorites.getFavoriteStickers(
+          generatedCode,
+        );
         final favoriteIds = favoriteStickers.map((s) => s.id).toSet();
-        
+
         // Update favorites in a single pass
         for (var sticker in fetchedCustomStickers) {
           sticker.isFavorite = favoriteIds.contains(sticker.id);
         }
-        
+
         if (mounted) {
           setState(() {
             customStickerItems = fetchedCustomStickers;
@@ -218,7 +226,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _updateMessageFields() {
     if (!mounted) return;
-    
+
     List<Sticker> currentStickers;
     switch (_currentViewType) {
       case StickerViewType.favorites:
@@ -232,11 +240,13 @@ class _HomePageState extends ConsumerState<HomePage> {
         currentStickers = stickerItems;
         break;
     }
-    
-    if (currentStickers.isNotEmpty && _currentImageIndex < currentStickers.length) {
+
+    if (currentStickers.isNotEmpty &&
+        _currentImageIndex < currentStickers.length) {
       setState(() {
         _titleController.text = currentStickers[_currentImageIndex].title ?? '';
-        _messageController.text = currentStickers[_currentImageIndex].body ?? '';
+        _messageController.text =
+            currentStickers[_currentImageIndex].body ?? '';
       });
     } else {
       setState(() {
@@ -255,480 +265,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(8),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      // Latest Notifications
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.23,
-                        child: LatestNotificationsWidget(userId: generatedCode),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      // Carousel Section with Switch
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.35,
-                        child: Column(
-                          children: [
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.9,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SegmentedButton<StickerViewType>(
-                                    segments: const [
-                                      ButtonSegment<StickerViewType>(
-                                        value: StickerViewType.all,
-                                        icon: Icon(Icons.grid_view, size: 18),
-                                        label: Text(
-                                          'Collection',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                      ),
-                                      ButtonSegment<StickerViewType>(
-                                        value: StickerViewType.favorites,
-                                        icon: Icon(Icons.favorite, size: 18),
-                                        label: Text(
-                                          'Favorites',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                      ),
-                                      ButtonSegment<StickerViewType>(
-                                        value: StickerViewType.custom,
-                                        icon: Icon(
-                                          Icons.add_photo_alternate,
-                                          size: 18,
-                                        ),
-                                        label: Text(
-                                          'Custom',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                      ),
-                                    ],
-                                    selected: {_currentViewType},
-                                    onSelectionChanged: (
-                                      Set<StickerViewType> selected,
-                                    ) async {
-                                      setState(() {
-                                        _currentViewType = selected.first;
-                                        _currentImageIndex = 0;
-                                      });
-                                      
-                                      // Load data based on selected view type
-                                      if (_currentViewType == StickerViewType.custom) {
-                                        await _loadCustomStickers();
-                                      } else if (_currentViewType == StickerViewType.favorites) {
-                                        await _loadFavoriteStickers();
-                                      }
-                                      
-                                      _updateMessageFields();
-                                    },
-                                    showSelectedIcon: false,
-                                    style: ButtonStyle(
-                                      visualDensity: VisualDensity.compact,
-                                      padding: MaterialStateProperty.all(
-                                        const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 0,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Expanded(
-                              child: _currentViewType == StickerViewType.custom
-                                  ? customStickerItems.isEmpty
-                                      ? CustomStickerView(
-                                          onAddPressed: () => _showCustomStickerDialog(context),
-                                        )
-                                      : PageView.builder(
-                                          controller: _pageController,
-                                          itemCount: customStickerItems.length,
-                                          itemBuilder: (context, index) {
-                                            final item = customStickerItems[index];
-                                            return AnimatedScale(
-                                              scale: _currentImageIndex == index ? 1.0 : 0.9,
-                                              duration: const Duration(milliseconds: 200),
-                                              child: Container(
-                                                margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                                                child: ClipRRect(
-                                                  borderRadius: BorderRadius.circular(16),
-                                                  child: Stack(
-                                                    fit: StackFit.expand,
-                                                    children: [
-                                                      _buildStickerImage(item.url),
-                                                      Positioned(
-                                                        top: 8,
-                                                        right: 8,
-                                                        child: Container(
-                                                          decoration: BoxDecoration(
-                                                            color: theme.colorScheme.surface.withOpacity(0.8),
-                                                            borderRadius: BorderRadius.circular(20),
-                                                          ),
-                                                          child: IconButton(
-                                                            icon: Icon(
-                                                              item.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                                              color: item.isFavorite ? Colors.red : theme.colorScheme.onSurface,
-                                                            ),
-                                                            onPressed: () async {
-                                                              setState(() {
-                                                                item.isFavorite = !item.isFavorite;
-                                                              });
-                                                              await ref.read(
-                                                                toggleFavoriteProvider((
-                                                                  sticker: item,
-                                                                  isFavorite: item.isFavorite,
-                                                                )).future,
-                                                              );
-                                                              if (_currentViewType == StickerViewType.favorites) {
-                                                                await _loadFavoriteStickers();
-                                                              }
-                                                              _updateMessageFields();
-                                                            },
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        )
-                                  : _currentViewType == StickerViewType.favorites
-                                      ? _favoriteStickers.isEmpty
-                                          ? Center(
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.favorite_border,
-                                                    size: 48,
-                                                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    'No favorite stickers yet',
-                                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : PageView.builder(
-                                              controller: _pageController,
-                                              itemCount: _favoriteStickers.length,
-                                              itemBuilder: (context, index) {
-                                                final item = _favoriteStickers[index];
-                                                return AnimatedScale(
-                                                  scale: _currentImageIndex == index ? 1.0 : 0.9,
-                                                  duration: const Duration(milliseconds: 200),
-                                                  child: Container(
-                                                    margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                                                    child: ClipRRect(
-                                                      borderRadius: BorderRadius.circular(16),
-                                                      child: Stack(
-                                                        fit: StackFit.expand,
-                                                        children: [
-                                                          _buildStickerImage(item.url),
-                                                          Positioned(
-                                                            top: 8,
-                                                            right: 8,
-                                                            child: Container(
-                                                              decoration: BoxDecoration(
-                                                                color: theme.colorScheme.surface.withOpacity(0.8),
-                                                                borderRadius: BorderRadius.circular(20),
-                                                              ),
-                                                              child: IconButton(
-                                                                icon: Icon(
-                                                                  item.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                                                  color: item.isFavorite ? Colors.red : theme.colorScheme.onSurface,
-                                                                ),
-                                                                onPressed: () async {
-                                                                  setState(() {
-                                                                    item.isFavorite = !item.isFavorite;
-                                                                  });
-                                                                  await ref.read(
-                                                                    toggleFavoriteProvider((
-                                                                      sticker: item,
-                                                                      isFavorite: item.isFavorite,
-                                                                    )).future,
-                                                                  );
-                                                                  if (_currentViewType == StickerViewType.favorites) {
-                                                                    await _loadFavoriteStickers();
-                                                                  }
-                                                                  _updateMessageFields();
-                                                                },
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            )
-                                      : PageView.builder(
-                                        controller: _pageController,
-                                        itemCount:
-                                            _currentViewType ==
-                                                    StickerViewType.favorites
-                                                ? stickerItems
-                                                    .where(
-                                                      (item) => item.isFavorite,
-                                                    )
-                                                    .length
-                                                : stickerItems.length,
-                                        itemBuilder: (context, index) {
-                                          final items =
-                                              _currentViewType ==
-                                                      StickerViewType.favorites
-                                                  ? stickerItems
-                                                      .where(
-                                                        (item) =>
-                                                            item.isFavorite,
-                                                      )
-                                                      .toList()
-                                                  : stickerItems;
-                                          final item = items[index];
-                                          return AnimatedScale(
-                                            scale:
-                                                _currentImageIndex == index
-                                                    ? 1.0
-                                                    : 0.9,
-                                            duration: const Duration(
-                                              milliseconds: 200,
-                                            ),
-                                            child: Container(
-                                              margin:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 5.0,
-                                                  ),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                child: Stack(
-                                                  fit: StackFit.expand,
-                                                  children: [
-                                                    _buildStickerImage(item.url),
-                                                    Positioned(
-                                                      top: 8,
-                                                      right: 8,
-                                                      child: Container(
-                                                        decoration: BoxDecoration(
-                                                          color: theme
-                                                              .colorScheme
-                                                              .surface
-                                                              .withOpacity(0.8),
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                20,
-                                                              ),
-                                                        ),
-                                                        child: IconButton(
-                                                          icon: Icon(
-                                                            item.isFavorite
-                                                                ? Icons.favorite
-                                                                : Icons
-                                                                    .favorite_border,
-                                                            color:
-                                                                item.isFavorite
-                                                                    ? Colors.red
-                                                                    : theme
-                                                                        .colorScheme
-                                                                        .onSurface,
-                                                          ),
-                                                          onPressed: () async {
-                                                            setState(() {
-                                                              item.isFavorite =
-                                                                  !item
-                                                                      .isFavorite;
-                                                            });
-                                                            await ref.read(
-                                                              toggleFavoriteProvider((
-                                                                sticker: item,
-                                                                isFavorite: item.isFavorite,
-                                                              )).future,
-                                                            );
-                                                            if (_currentViewType == StickerViewType.favorites) {
-                                                              await _loadFavoriteStickers();
-                                                            }
-                                                            _updateMessageFields();
-                                                          },
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Message Fields and Send Button
-                      Padding(
-                        padding: EdgeInsets.only(
-                          bottom:
-                              MediaQuery.of(context).viewInsets.bottom > 0
-                                  ? 8
-                                  : 0,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _titleController,
-                              decoration: const InputDecoration(
-                                labelText: 'Message Title',
-                                hintText: 'Enter a title for your message',
-                                prefixIcon: Icon(Icons.title),
-                                filled: true,
-                              ),
-                              validator:
-                                  (v) =>
-                                      (v == null || v.isEmpty)
-                                          ? 'Please enter a title'
-                                          : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _messageController,
-                              decoration: const InputDecoration(
-                                labelText: 'Your Message',
-                                hintText: 'Type your message here…',
-                                prefixIcon: Icon(Icons.message),
-                                alignLabelWithHint: true,
-                                filled: true,
-                              ),
-                              keyboardType: TextInputType.multiline,
-                              minLines: 2,
-                              maxLines: 3,
-                              validator:
-                                  (v) =>
-                                      (v == null || v.isEmpty)
-                                          ? 'Please enter a message'
-                                          : null,
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                if (_currentViewType == StickerViewType.custom)
-                                  const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed:
-                                        _isLoading || connectedStatus == false
-                                            ? () {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: const Text(
-                                                    'Please connect with user first!',
-                                                  ),
-                                                  backgroundColor: Colors.red,
-                                                  behavior:
-                                                      SnackBarBehavior.floating,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          10,
-                                                        ),
-                                                  ),
-                                                  margin: const EdgeInsets.all(
-                                                    16,
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                            : _sendMessage,
-                                    icon:
-                                        _isLoading
-                                            ? const SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                            : const Icon(Icons.send),
-                                    label: Text(
-                                      _isLoading
-                                          ? 'Sending...'
-                                          : 'Send Message',
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      minimumSize: const Size(
-                                        double.infinity,
-                                        48,
-                                      ),
-                                      backgroundColor:
-                                          theme.colorScheme.primary,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                  ),
-                                ),
-
-                                if (_currentViewType == StickerViewType.custom)
-                                  Container(
-                                    margin: const EdgeInsets.only(left: 8),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary.withOpacity(0.8),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: IconButton(
-                                      icon: Icon(
-                                        Icons.add_photo_alternate_rounded,
-                                        color: theme.colorScheme.onSecondary,
-                                      ),
-                                      onPressed: () => _showCustomStickerDialog(context),
-                                      style: IconButton.styleFrom(
-                                        padding: const EdgeInsets.all(12),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
       appBar: AppBar(
         toolbarHeight: 50,
         title: const Text(
@@ -737,7 +273,27 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
         centerTitle: false,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.checklist),
+          onPressed: () {
+            _mainPageController.animateToPage(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          },
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              _mainPageController.animateToPage(
+                1,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+          ),
           if (!connectedStatus)
             IconButton(
               icon: const Icon(Icons.person_add),
@@ -869,6 +425,620 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
 
             const SizedBox(height: 8),
+          ],
+        ),
+      ),
+      body: SafeArea(
+        child: PageView(
+          controller: _mainPageController,
+          children: [
+            
+            const TodoPage(),
+            // Home Page
+            Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(8),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          // Latest Notifications
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.23,
+                            child: LatestNotificationsWidget(
+                              userId: generatedCode,
+                            ),
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          // Carousel Section with Switch
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.35,
+                            child: Column(
+                              children: [
+                                Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.9,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SegmentedButton<StickerViewType>(
+                                        segments: const [
+                                          ButtonSegment<StickerViewType>(
+                                            value: StickerViewType.all,
+                                            icon: Icon(
+                                              Icons.grid_view,
+                                              size: 18,
+                                            ),
+                                            label: Text(
+                                              'Collection',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ),
+                                          ButtonSegment<StickerViewType>(
+                                            value: StickerViewType.favorites,
+                                            icon: Icon(
+                                              Icons.favorite,
+                                              size: 18,
+                                            ),
+                                            label: Text(
+                                              'Favorites',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ),
+                                          ButtonSegment<StickerViewType>(
+                                            value: StickerViewType.custom,
+                                            icon: Icon(
+                                              Icons.add_photo_alternate,
+                                              size: 18,
+                                            ),
+                                            label: Text(
+                                              'Custom',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ),
+                                        ],
+                                        selected: {_currentViewType},
+                                        onSelectionChanged: (
+                                          Set<StickerViewType> selected,
+                                        ) async {
+                                          setState(() {
+                                            _currentViewType = selected.first;
+                                            _currentImageIndex = 0;
+                                          });
+
+                                          // Load data based on selected view type
+                                          if (_currentViewType ==
+                                              StickerViewType.custom) {
+                                            await _loadCustomStickers();
+                                          } else if (_currentViewType ==
+                                              StickerViewType.favorites) {
+                                            await _loadFavoriteStickers();
+                                          }
+
+                                          _updateMessageFields();
+                                        },
+                                        showSelectedIcon: false,
+                                        style: ButtonStyle(
+                                          visualDensity: VisualDensity.compact,
+                                          padding: MaterialStateProperty.all(
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 0,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Expanded(
+                                  child:
+                                      _currentViewType == StickerViewType.custom
+                                          ? customStickerItems.isEmpty
+                                              ? CustomStickerView(
+                                                onAddPressed:
+                                                    () =>
+                                                        _showCustomStickerDialog(
+                                                          context,
+                                                        ),
+                                              )
+                                              : PageView.builder(
+                                                controller: _pageController,
+                                                itemCount:
+                                                    customStickerItems.length,
+                                                itemBuilder: (context, index) {
+                                                  final item =
+                                                      customStickerItems[index];
+                                                  return AnimatedScale(
+                                                    scale:
+                                                        _currentImageIndex ==
+                                                                index
+                                                            ? 1.0
+                                                            : 0.9,
+                                                    duration: const Duration(
+                                                      milliseconds: 200,
+                                                    ),
+                                                    child: Container(
+                                                      margin:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 5.0,
+                                                          ),
+                                                      child: ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              16,
+                                                            ),
+                                                        child: Stack(
+                                                          fit: StackFit.expand,
+                                                          children: [
+                                                            _buildStickerImage(
+                                                              item.url,
+                                                            ),
+                                                            Positioned(
+                                                              top: 8,
+                                                              right: 8,
+                                                              child: Container(
+                                                                decoration: BoxDecoration(
+                                                                  color: theme
+                                                                      .colorScheme
+                                                                      .surface
+                                                                      .withOpacity(
+                                                                        0.8,
+                                                                      ),
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        20,
+                                                                      ),
+                                                                ),
+                                                                child: IconButton(
+                                                                  icon: Icon(
+                                                                    item.isFavorite
+                                                                        ? Icons
+                                                                            .favorite
+                                                                        : Icons
+                                                                            .favorite_border,
+                                                                    color:
+                                                                        item.isFavorite
+                                                                            ? Colors.red
+                                                                            : theme.colorScheme.onSurface,
+                                                                  ),
+                                                                  onPressed: () async {
+                                                                    setState(() {
+                                                                      item.isFavorite =
+                                                                          !item
+                                                                              .isFavorite;
+                                                                    });
+                                                                    await ref.read(
+                                                                      toggleFavoriteProvider((
+                                                                        sticker:
+                                                                            item,
+                                                                        isFavorite:
+                                                                            item.isFavorite,
+                                                                      )).future,
+                                                                    );
+                                                                    if (_currentViewType ==
+                                                                        StickerViewType
+                                                                            .favorites) {
+                                                                      await _loadFavoriteStickers();
+                                                                    }
+                                                                    _updateMessageFields();
+                                                                  },
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              )
+                                          : _currentViewType ==
+                                              StickerViewType.favorites
+                                          ? _favoriteStickers.isEmpty
+                                              ? Center(
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.favorite_border,
+                                                      size: 48,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSurfaceVariant
+                                                          .withOpacity(0.5),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      'No favorite stickers yet',
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodyMedium
+                                                          ?.copyWith(
+                                                            color: theme
+                                                                .colorScheme
+                                                                .onSurfaceVariant
+                                                                .withOpacity(
+                                                                  0.7,
+                                                                ),
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              )
+                                              : PageView.builder(
+                                                controller: _pageController,
+                                                itemCount:
+                                                    _favoriteStickers.length,
+                                                itemBuilder: (context, index) {
+                                                  final item =
+                                                      _favoriteStickers[index];
+                                                  return AnimatedScale(
+                                                    scale:
+                                                        _currentImageIndex ==
+                                                                index
+                                                            ? 1.0
+                                                            : 0.9,
+                                                    duration: const Duration(
+                                                      milliseconds: 200,
+                                                    ),
+                                                    child: Container(
+                                                      margin:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 5.0,
+                                                          ),
+                                                      child: ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              16,
+                                                            ),
+                                                        child: Stack(
+                                                          fit: StackFit.expand,
+                                                          children: [
+                                                            _buildStickerImage(
+                                                              item.url,
+                                                            ),
+                                                            Positioned(
+                                                              top: 8,
+                                                              right: 8,
+                                                              child: Container(
+                                                                decoration: BoxDecoration(
+                                                                  color: theme
+                                                                      .colorScheme
+                                                                      .surface
+                                                                      .withOpacity(
+                                                                        0.8,
+                                                                      ),
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        20,
+                                                                      ),
+                                                                ),
+                                                                child: IconButton(
+                                                                  icon: Icon(
+                                                                    item.isFavorite
+                                                                        ? Icons
+                                                                            .favorite
+                                                                        : Icons
+                                                                            .favorite_border,
+                                                                    color:
+                                                                        item.isFavorite
+                                                                            ? Colors.red
+                                                                            : theme.colorScheme.onSurface,
+                                                                  ),
+                                                                  onPressed: () async {
+                                                                    setState(() {
+                                                                      item.isFavorite =
+                                                                          !item
+                                                                              .isFavorite;
+                                                                    });
+                                                                    await ref.read(
+                                                                      toggleFavoriteProvider((
+                                                                        sticker:
+                                                                            item,
+                                                                        isFavorite:
+                                                                            item.isFavorite,
+                                                                      )).future,
+                                                                    );
+                                                                    if (_currentViewType ==
+                                                                        StickerViewType
+                                                                            .favorites) {
+                                                                      await _loadFavoriteStickers();
+                                                                    }
+                                                                    _updateMessageFields();
+                                                                  },
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              )
+                                          : PageView.builder(
+                                            controller: _pageController,
+                                            itemCount:
+                                                _currentViewType ==
+                                                        StickerViewType
+                                                            .favorites
+                                                    ? stickerItems
+                                                        .where(
+                                                          (item) =>
+                                                              item.isFavorite,
+                                                        )
+                                                        .length
+                                                    : stickerItems.length,
+                                            itemBuilder: (context, index) {
+                                              final items =
+                                                  _currentViewType ==
+                                                          StickerViewType
+                                                              .favorites
+                                                      ? stickerItems
+                                                          .where(
+                                                            (item) =>
+                                                                item.isFavorite,
+                                                          )
+                                                          .toList()
+                                                      : stickerItems;
+                                              final item = items[index];
+                                              return AnimatedScale(
+                                                scale:
+                                                    _currentImageIndex == index
+                                                        ? 1.0
+                                                        : 0.9,
+                                                duration: const Duration(
+                                                  milliseconds: 200,
+                                                ),
+                                                child: Container(
+                                                  margin:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 5.0,
+                                                      ),
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
+                                                    child: Stack(
+                                                      fit: StackFit.expand,
+                                                      children: [
+                                                        _buildStickerImage(
+                                                          item.url,
+                                                        ),
+                                                        Positioned(
+                                                          top: 8,
+                                                          right: 8,
+                                                          child: Container(
+                                                            decoration: BoxDecoration(
+                                                              color: theme
+                                                                  .colorScheme
+                                                                  .surface
+                                                                  .withOpacity(
+                                                                    0.8,
+                                                                  ),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    20,
+                                                                  ),
+                                                            ),
+                                                            child: IconButton(
+                                                              icon: Icon(
+                                                                item.isFavorite
+                                                                    ? Icons
+                                                                        .favorite
+                                                                    : Icons
+                                                                        .favorite_border,
+                                                                color:
+                                                                    item.isFavorite
+                                                                        ? Colors
+                                                                            .red
+                                                                        : theme
+                                                                            .colorScheme
+                                                                            .onSurface,
+                                                              ),
+                                                              onPressed: () async {
+                                                                setState(() {
+                                                                  item.isFavorite =
+                                                                      !item
+                                                                          .isFavorite;
+                                                                });
+                                                                await ref.read(
+                                                                  toggleFavoriteProvider((
+                                                                    sticker:
+                                                                        item,
+                                                                    isFavorite:
+                                                                        item.isFavorite,
+                                                                  )).future,
+                                                                );
+                                                                if (_currentViewType ==
+                                                                    StickerViewType
+                                                                        .favorites) {
+                                                                  await _loadFavoriteStickers();
+                                                                }
+                                                                _updateMessageFields();
+                                                              },
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // Message Fields and Send Button
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom:
+                                  MediaQuery.of(context).viewInsets.bottom > 0
+                                      ? 8
+                                      : 0,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _titleController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Message Title',
+                                    hintText: 'Enter a title for your message',
+                                    prefixIcon: Icon(Icons.title),
+                                    filled: true,
+                                  ),
+                                  validator:
+                                      (v) =>
+                                          (v == null || v.isEmpty)
+                                              ? 'Please enter a title'
+                                              : null,
+                                ),
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _messageController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Your Message',
+                                    hintText: 'Type your message here…',
+                                    prefixIcon: Icon(Icons.message),
+                                    alignLabelWithHint: true,
+                                    filled: true,
+                                  ),
+                                  keyboardType: TextInputType.multiline,
+                                  minLines: 2,
+                                  maxLines: 3,
+                                  validator:
+                                      (v) =>
+                                          (v == null || v.isEmpty)
+                                              ? 'Please enter a message'
+                                              : null,
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    if (_currentViewType ==
+                                        StickerViewType.custom)
+                                      const SizedBox(width: 8),
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        onPressed:
+                                            _isLoading ||
+                                                    connectedStatus == false
+                                                ? () {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: const Text(
+                                                        'Please connect with user first!',
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                      behavior:
+                                                          SnackBarBehavior
+                                                              .floating,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              10,
+                                                            ),
+                                                      ),
+                                                      margin:
+                                                          const EdgeInsets.all(
+                                                            16,
+                                                          ),
+                                                    ),
+                                                  );
+                                                }
+                                                : _sendMessage,
+                                        icon:
+                                            _isLoading
+                                                ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                )
+                                                : const Icon(Icons.send),
+                                        label: Text(
+                                          _isLoading
+                                              ? 'Sending...'
+                                              : 'Send Message',
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          minimumSize: const Size(
+                                            double.infinity,
+                                            48,
+                                          ),
+                                          backgroundColor:
+                                              theme.colorScheme.primary,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+
+                                    if (_currentViewType ==
+                                        StickerViewType.custom)
+                                      Container(
+                                        margin: const EdgeInsets.only(left: 8),
+                                        decoration: BoxDecoration(
+                                          color: theme.colorScheme.primary
+                                              .withOpacity(0.8),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.add_photo_alternate_rounded,
+                                            color:
+                                                theme.colorScheme.onSecondary,
+                                          ),
+                                          onPressed:
+                                              () => _showCustomStickerDialog(
+                                                context,
+                                              ),
+                                          style: IconButton.styleFrom(
+                                            padding: const EdgeInsets.all(12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -1090,22 +1260,18 @@ class _HomePageState extends ConsumerState<HomePage> {
     return CachedNetworkImage(
       imageUrl: url,
       fit: BoxFit.cover,
-      placeholder: (context, url) => Container(
-        color: Colors.grey[300],
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
-      errorWidget: (context, url, error) => Container(
-        color: Colors.grey[300],
-        child: const Center(
-          child: Icon(
-            Icons.error_outline,
-            color: Colors.grey,
-            size: 40,
+      placeholder:
+          (context, url) => Container(
+            color: Colors.grey[300],
+            child: const Center(child: CircularProgressIndicator()),
           ),
-        ),
-      ),
+      errorWidget:
+          (context, url, error) => Container(
+            color: Colors.grey[300],
+            child: const Center(
+              child: Icon(Icons.error_outline, color: Colors.grey, size: 40),
+            ),
+          ),
     );
   }
 }
