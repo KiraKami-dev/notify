@@ -16,6 +16,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   final _subtaskController = TextEditingController();
   final _editController = TextEditingController();
   bool _isReorderEnabled = false;
+  bool _isSubtaskReorderEnabled = false;
 
   @override
   void dispose() {
@@ -50,7 +51,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     return confirmed ?? false;
   }
 
-    void _reorderTodo(int oldIndex, int newIndex) {
+  void _reorderTodo(int oldIndex, int newIndex) {
     setState(() {
       if (oldIndex < newIndex) {
         newIndex -= 1;
@@ -120,8 +121,6 @@ class _TodoPageState extends ConsumerState<TodoPage> {
       Navigator.pop(context);
     }
   }
-
-  
 
   Future<void> _selectDate(BuildContext context, TodoItem todo) async {
     final DateTime? picked = await showDatePicker(
@@ -243,6 +242,31 @@ class _TodoPageState extends ConsumerState<TodoPage> {
         ],
       ),
     );
+  }
+
+  Future<bool> _confirmSubtaskDismiss() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Subtask?'),
+        content: const Text('Are you sure you want to delete this subtask?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 
   @override
@@ -432,63 +456,45 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                         ],
                                       ),
                                       children: [
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              OutlinedButton.icon(
-                                                onPressed: () => _editTodo(todo.id),
-                                                icon: const Icon(Icons.edit_outlined),
-                                                label: const Text('Edit'),
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor: theme.colorScheme.primary,
-                                                ),
-                                              ),
-                                              OutlinedButton.icon(
-                                                onPressed: () async {
-                                                  if (await _confirmDismiss()) {
-                                                    _removeTodo(todo.id);
-                                                  }
-                                                },
-                                                icon: const Icon(Icons.delete_outline),
-                                                label: const Text('Delete'),
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor: theme.colorScheme.error,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                        
                                         if (todo.subtasks.isNotEmpty)
                                           ExpansionTile(
-                                            title: Text(
-                                              'Subtasks (${todo.subtasks.where((task) => task.isCompleted).length}/${todo.subtasks.length})',
-                                              style: theme.textTheme.titleSmall,
+                                            title: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  'Subtasks (${todo.subtasks.where((task) => task.isCompleted).length}/${todo.subtasks.length})',
+                                                  style: theme.textTheme.titleSmall,
+                                                ),
+                                                IconButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _isSubtaskReorderEnabled = !_isSubtaskReorderEnabled;
+                                                    });
+                                                  },
+                                                  icon: Icon(
+                                                    _isSubtaskReorderEnabled ? Icons.lock_open : Icons.lock_outline,
+                                                    color: _isSubtaskReorderEnabled ? theme.colorScheme.primary : theme.colorScheme.outline,
+                                                    size: 20,
+                                                  ),
+                                                  tooltip: _isSubtaskReorderEnabled ? 'Disable Reorder' : 'Enable Reorder',
+                                                ),
+                                              ],
                                             ),
                                             children: [
                                               Padding(
                                                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                                child: ReorderableListView(
-                                                  shrinkWrap: true,
-                                                  physics: const NeverScrollableScrollPhysics(),
-                                                  onReorder: (oldIndex, newIndex) => 
-                                                      _reorderSubtask(todo, oldIndex, newIndex),
-                                                  children: [
-                                                    for (final subtask in todo.subtasks)
-                                                      Row(
-                                                        key: ValueKey(subtask.id),
+                                                child: _isSubtaskReorderEnabled
+                                                    ? ReorderableListView(
+                                                        shrinkWrap: true,
+                                                        physics: const NeverScrollableScrollPhysics(),
+                                                        onReorder: (oldIndex, newIndex) => 
+                                                            _reorderSubtask(todo, oldIndex, newIndex),
                                                         children: [
-                                                          ReorderableDragStartListener(
-                                                            index: todo.subtasks.indexOf(subtask),
-                                                            child: const Icon(
-                                                              Icons.drag_handle,
-                                                              color: Colors.grey,
-                                                            ),
-                                                          ),
-                                                          Expanded(
-                                                            child: GestureDetector(
-                                                              onTap: () => _editSubtask(todo.id, subtask.id),
+                                                          for (final subtask in todo.subtasks)
+                                                            ReorderableDragStartListener(
+                                                              key: ValueKey(subtask.id),
+                                                              index: todo.subtasks.indexOf(subtask),
                                                               child: CheckboxListTile(
                                                                 value: subtask.isCompleted,
                                                                 onChanged: (_) =>
@@ -513,11 +519,108 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                                                     EdgeInsets.zero,
                                                               ),
                                                             ),
-                                                          ),
                                                         ],
+                                                      )
+                                                    : ListView.builder(
+                                                        shrinkWrap: true,
+                                                        physics: const NeverScrollableScrollPhysics(),
+                                                        itemCount: todo.subtasks.length,
+                                                        itemBuilder: (context, index) {
+                                                          final subtask = todo.subtasks[index];
+                                                          return Dismissible(
+                                                            key: ValueKey(subtask.id),
+                                                            direction: DismissDirection.horizontal,
+                                                            confirmDismiss: (direction) async {
+                                                              if (direction == DismissDirection.endToStart) {
+                                                                return _confirmSubtaskDismiss();
+                                                              } else {
+                                                                _editSubtask(todo.id, subtask.id);
+                                                                return false;
+                                                              }
+                                                            },
+                                                            onDismissed: (direction) {
+                                                              if (direction == DismissDirection.endToStart) {
+                                                                setState(() {
+                                                                  todo.subtasks.removeWhere((task) => task.id == subtask.id);
+                                                                });
+                                                              }
+                                                            },
+                                                            background: Container(
+                                                              alignment: Alignment.centerRight,
+                                                              padding: const EdgeInsets.only(right: 24.0),
+                                                              decoration: BoxDecoration(
+                                                                color: theme.colorScheme.error,
+                                                                borderRadius: BorderRadius.circular(16),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                                children: [
+                                                                  Text(
+                                                                    'Delete',
+                                                                    style: TextStyle(
+                                                                      color: theme.colorScheme.onError,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(width: 8),
+                                                                  Icon(
+                                                                    Icons.delete_outline,
+                                                                    color: theme.colorScheme.onError,
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                            secondaryBackground: Container(
+                                                              alignment: Alignment.centerLeft,
+                                                              padding: const EdgeInsets.only(left: 24.0),
+                                                              decoration: BoxDecoration(
+                                                                color: theme.colorScheme.primary,
+                                                                borderRadius: BorderRadius.circular(16),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                                children: [
+                                                                  Icon(
+                                                                    Icons.edit_outlined,
+                                                                    color: theme.colorScheme.onPrimary,
+                                                                  ),
+                                                                  const SizedBox(width: 8),
+                                                                  Text(
+                                                                    'Edit',
+                                                                    style: TextStyle(
+                                                                      color: theme.colorScheme.onPrimary,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                            child: CheckboxListTile(
+                                                              value: subtask.isCompleted,
+                                                              onChanged: (_) =>
+                                                                  _toggleSubtask(
+                                                                      todo.id,
+                                                                      subtask.id),
+                                                              title: Text(
+                                                                subtask.title,
+                                                                style: TextStyle(
+                                                                  decoration: subtask.isCompleted
+                                                                      ? TextDecoration.lineThrough
+                                                                      : null,
+                                                                  color: subtask.isCompleted
+                                                                      ? theme.colorScheme.outline
+                                                                      : null,
+                                                                ),
+                                                              ),
+                                                              controlAffinity:
+                                                                  ListTileControlAffinity
+                                                                      .leading,
+                                                              contentPadding:
+                                                                  EdgeInsets.zero,
+                                                            ),
+                                                          );
+                                                        },
                                                       ),
-                                                  ],
-                                                ),
                                               ),
                                             ],
                                           ),
@@ -711,33 +814,42 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                         
                                         if (todo.subtasks.isNotEmpty)
                                           ExpansionTile(
-                                            title: Text(
-                                              'Subtasks (${todo.subtasks.where((task) => task.isCompleted).length}/${todo.subtasks.length})',
-                                              style: theme.textTheme.titleSmall,
+                                            title: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  'Subtasks (${todo.subtasks.where((task) => task.isCompleted).length}/${todo.subtasks.length})',
+                                                  style: theme.textTheme.titleSmall,
+                                                ),
+                                                IconButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _isSubtaskReorderEnabled = !_isSubtaskReorderEnabled;
+                                                    });
+                                                  },
+                                                  icon: Icon(
+                                                    _isSubtaskReorderEnabled ? Icons.lock_open : Icons.lock_outline,
+                                                    color: _isSubtaskReorderEnabled ? theme.colorScheme.primary : theme.colorScheme.outline,
+                                                    size: 20,
+                                                  ),
+                                                  tooltip: _isSubtaskReorderEnabled ? 'Disable Reorder' : 'Enable Reorder',
+                                                ),
+                                              ],
                                             ),
                                             children: [
                                               Padding(
                                                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                                child: ReorderableListView(
-                                                  shrinkWrap: true,
-                                                  physics: const NeverScrollableScrollPhysics(),
-                                                  onReorder: (oldIndex, newIndex) => 
-                                                      _reorderSubtask(todo, oldIndex, newIndex),
-                                                  children: [
-                                                    for (final subtask in todo.subtasks)
-                                                      Row(
-                                                        key: ValueKey(subtask.id),
+                                                child: _isSubtaskReorderEnabled
+                                                    ? ReorderableListView(
+                                                        shrinkWrap: true,
+                                                        physics: const NeverScrollableScrollPhysics(),
+                                                        onReorder: (oldIndex, newIndex) => 
+                                                            _reorderSubtask(todo, oldIndex, newIndex),
                                                         children: [
-                                                          ReorderableDragStartListener(
-                                                            index: todo.subtasks.indexOf(subtask),
-                                                            child: const Icon(
-                                                              Icons.drag_handle,
-                                                              color: Colors.grey,
-                                                            ),
-                                                          ),
-                                                          Expanded(
-                                                            child: GestureDetector(
-                                                              onTap: () => _editSubtask(todo.id, subtask.id),
+                                                          for (final subtask in todo.subtasks)
+                                                            ReorderableDragStartListener(
+                                                              key: ValueKey(subtask.id),
+                                                              index: todo.subtasks.indexOf(subtask),
                                                               child: CheckboxListTile(
                                                                 value: subtask.isCompleted,
                                                                 onChanged: (_) =>
@@ -762,11 +874,108 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                                                     EdgeInsets.zero,
                                                               ),
                                                             ),
-                                                          ),
                                                         ],
+                                                      )
+                                                    : ListView.builder(
+                                                        shrinkWrap: true,
+                                                        physics: const NeverScrollableScrollPhysics(),
+                                                        itemCount: todo.subtasks.length,
+                                                        itemBuilder: (context, index) {
+                                                          final subtask = todo.subtasks[index];
+                                                          return Dismissible(
+                                                            key: ValueKey(subtask.id),
+                                                            direction: DismissDirection.horizontal,
+                                                            confirmDismiss: (direction) async {
+                                                              if (direction == DismissDirection.endToStart) {
+                                                                return _confirmSubtaskDismiss();
+                                                              } else {
+                                                                _editSubtask(todo.id, subtask.id);
+                                                                return false;
+                                                              }
+                                                            },
+                                                            onDismissed: (direction) {
+                                                              if (direction == DismissDirection.endToStart) {
+                                                                setState(() {
+                                                                  todo.subtasks.removeWhere((task) => task.id == subtask.id);
+                                                                });
+                                                              }
+                                                            },
+                                                            background: Container(
+                                                              alignment: Alignment.centerLeft,
+                                                              padding: const EdgeInsets.only(left: 24.0),
+                                                              decoration: BoxDecoration(
+                                                                color: theme.colorScheme.primary,
+                                                                borderRadius: BorderRadius.circular(16),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                                children: [
+                                                                  Icon(
+                                                                    Icons.edit_outlined,
+                                                                    color: theme.colorScheme.onPrimary,
+                                                                  ),
+                                                                  const SizedBox(width: 8),
+                                                                  Text(
+                                                                    'Edit',
+                                                                    style: TextStyle(
+                                                                      color: theme.colorScheme.onPrimary,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                            secondaryBackground: Container(
+                                                              alignment: Alignment.centerRight,
+                                                              padding: const EdgeInsets.only(right: 24.0),
+                                                              decoration: BoxDecoration(
+                                                                color: theme.colorScheme.error,
+                                                                borderRadius: BorderRadius.circular(16),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                                children: [
+                                                                  Text(
+                                                                    'Delete',
+                                                                    style: TextStyle(
+                                                                      color: theme.colorScheme.onError,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(width: 8),
+                                                                  Icon(
+                                                                    Icons.delete_outline,
+                                                                    color: theme.colorScheme.onError,
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                            child: CheckboxListTile(
+                                                              value: subtask.isCompleted,
+                                                              onChanged: (_) =>
+                                                                  _toggleSubtask(
+                                                                      todo.id,
+                                                                      subtask.id),
+                                                              title: Text(
+                                                                subtask.title,
+                                                                style: TextStyle(
+                                                                  decoration: subtask.isCompleted
+                                                                      ? TextDecoration.lineThrough
+                                                                      : null,
+                                                                  color: subtask.isCompleted
+                                                                      ? theme.colorScheme.outline
+                                                                      : null,
+                                                                ),
+                                                              ),
+                                                              controlAffinity:
+                                                                  ListTileControlAffinity
+                                                                      .leading,
+                                                              contentPadding:
+                                                                  EdgeInsets.zero,
+                                                            ),
+                                                          );
+                                                        },
                                                       ),
-                                                  ],
-                                                ),
                                               ),
                                             ],
                                           ),
