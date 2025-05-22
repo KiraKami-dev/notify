@@ -103,11 +103,11 @@ class _TodoPageState extends ConsumerState<TodoPage> {
       // Schedule notification for the new todo
       if (todo.dueDate != null) {
         await NotificationService.scheduleTaskNotification(
-          userId: widget.userId,
           taskId: todo.id,
           title: todo.title,
           scheduledTime: todo.dueDate!,
           description: 'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
+          userId: widget.userId,
         );
       }
       
@@ -151,8 +151,98 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     }
   }
 
+  Future<void> _selectTime(BuildContext context, DateTime baseDate, TodoItem todo) async {
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(todo.dueDate ?? DateTime.now()),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: Theme.of(context).colorScheme.primary,
+                  onPrimary: Theme.of(context).colorScheme.onPrimary,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedTime != null) {
+      // Combine date and time
+      final DateTime scheduledDateTime = DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+
+      todo.dueDate = scheduledDateTime;
+      await FirebaseTodo.updateTodo(
+        userId: widget.userId,
+        todo: todo,
+      );
+      
+      // Update notification
+      await NotificationService.cancelTaskNotification(todo.id);
+      await NotificationService.scheduleTaskNotification(
+        taskId: todo.id,
+        title: todo.title,
+        scheduledTime: todo.dueDate!,
+        description: 'Due: ${DateFormat('MMM d, y h:mm a').format(todo.dueDate!)}',
+        userId: widget.userId,
+      );
+
+      // Show confirmation dialog
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Reminder Set'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'You will be reminded at:',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      DateFormat('MMM d, y h:mm a').format(scheduledDateTime),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _selectDate(BuildContext context, TodoItem todo) async {
-    final DateTime? picked = await showDatePicker(
+    // First show date picker
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: todo.dueDate ?? DateTime.now(),
       firstDate: DateTime.now(),
@@ -169,22 +259,9 @@ class _TodoPageState extends ConsumerState<TodoPage> {
         );
       },
     );
-    if (picked != null) {
-      todo.dueDate = picked;
-      await FirebaseTodo.updateTodo(
-        userId: widget.userId,
-        todo: todo,
-      );
-      
-      // Update notification when date is changed
-      await NotificationService.cancelTaskNotification(todo.id);
-      await NotificationService.scheduleTaskNotification(
-        userId: widget.userId,
-        taskId: todo.id,
-        title: todo.title,
-        scheduledTime: todo.dueDate!,
-        description: 'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
-      );
+
+    if (pickedDate != null) {
+      await _selectTime(context, pickedDate, todo);
     }
   }
 
@@ -245,11 +322,11 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                 if (todo.dueDate != null) {
                   await NotificationService.cancelTaskNotification(todo.id);
                   await NotificationService.scheduleTaskNotification(
-                    userId: widget.userId,
                     taskId: todo.id,
                     title: todo.title,
                     scheduledTime: todo.dueDate!,
                     description: 'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
+                    userId: widget.userId,
                   );
                 }
                 
@@ -335,45 +412,35 @@ class _TodoPageState extends ConsumerState<TodoPage> {
             ListTile(
               leading: const Icon(Icons.today),
               title: const Text('Today'),
+              subtitle: const Text('Set reminder for today'),
               onTap: () async {
-                todo.dueDate = DateTime.now();
-                todo.isRecurring = false;
-                await FirebaseTodo.updateTodo(
-                  userId: widget.userId,
-                  todo: todo,
-                );
                 Navigator.pop(context);
+                await _selectTime(context, DateTime.now(), todo);
               },
             ),
             ListTile(
               leading: const Icon(Icons.next_plan_outlined),
               title: const Text('Tomorrow'),
+              subtitle: const Text('Set reminder for tomorrow'),
               onTap: () async {
-                todo.dueDate = DateTime.now().add(const Duration(days: 1));
-                todo.isRecurring = false;
-                await FirebaseTodo.updateTodo(
-                  userId: widget.userId,
-                  todo: todo,
-                );
                 Navigator.pop(context);
+                await _selectTime(context, DateTime.now().add(const Duration(days: 1)), todo);
               },
             ),
             ListTile(
               leading: const Icon(Icons.repeat),
               title: const Text('Recurring'),
+              subtitle: const Text('Set daily recurring reminder'),
               onTap: () async {
-                todo.isRecurring = true;
-                todo.dueDate = DateTime.now();
-                await FirebaseTodo.updateTodo(
-                  userId: widget.userId,
-                  todo: todo,
-                );
                 Navigator.pop(context);
+                todo.isRecurring = true;
+                await _selectTime(context, DateTime.now(), todo);
               },
             ),
             ListTile(
               leading: const Icon(Icons.calendar_month),
-              title: const Text('Custom Date'),
+              title: const Text('Custom Date & Time'),
+              subtitle: const Text('Choose your preferred date and time'),
               onTap: () {
                 Navigator.pop(context);
                 _selectDate(context, todo);
@@ -674,8 +741,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                     const SizedBox(width: 4),
                     Text(
                       todo.isRecurring 
-                        ? 'Recurring - ${DateFormat('MMM d, y').format(todo.dueDate!)}'
-                        : DateFormat('MMM d, y').format(todo.dueDate!),
+                        ? '${DateFormat('MMM d, y h:mm a').format(todo.dueDate!)}'
+                        : DateFormat('MMM d, y h:mm a').format(todo.dueDate!),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.primary,
                       ),
@@ -701,9 +768,9 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                 onPressed: () async {
                   if (todo.dueDate != null) {
                     await NotificationService.showTaskReminder(
-                      userId: widget.userId,
                       title: todo.title,
                       description: 'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
+                      userId: widget.userId,
                     );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
