@@ -30,10 +30,13 @@ class SubTask {
   final String id;
   String title;
   bool isCompleted;
+  int order;
 
   SubTask({
     String? id,
     required this.title,
     this.isCompleted = false,
-  }) : id = id ?? const Uuid().v4();
+    int? order,
+  })  : id = id ?? const Uuid().v4(),
+        order = order ?? DateTime.now().millisecondsSinceEpoch;
 } 
