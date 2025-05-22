@@ -26,6 +26,11 @@ class TodoItem {
     final completedSubtasks = subtasks.where((task) => task.isCompleted).length;
     return completedSubtasks / subtasks.length;
   }
+
+  @override
+  String toString() {
+    return 'TodoItem(id: $id, title: $title, isCompleted: $isCompleted, dueDate: $dueDate, isRecurring: $isRecurring)';
+  }
 }
 
 class SubTask {
@@ -41,4 +46,4 @@ class SubTask {
     int? order,
   })  : id = id ?? const Uuid().v4(),
         order = order ?? DateTime.now().millisecondsSinceEpoch;
-} 
+}
