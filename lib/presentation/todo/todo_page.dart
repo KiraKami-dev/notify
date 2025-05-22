@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../domain/todo_item.dart';
+import 'package:notify/models/todo_item.dart';
 
 class TodoPage extends ConsumerStatefulWidget {
   const TodoPage({super.key});
@@ -20,6 +20,46 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     _todoController.dispose();
     _subtaskController.dispose();
     super.dispose();
+  }
+
+  Future<bool> _confirmDismiss() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Todo?'),
+        content: const Text('Are you sure you want to delete this todo?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  void _reorderTodo(int oldIndex, int newIndex) {
+    setState(() {
+      if (oldIndex < newIndex) {
+        newIndex -= 1;
+      }
+      final item = _todos.removeAt(oldIndex);
+      _todos.insert(newIndex, item);
+
+      // Update order values
+      for (int i = 0; i < _todos.length; i++) {
+        _todos[i].order = i;
+      }
+    });
   }
 
   void _addTodo() {
@@ -63,12 +103,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     }
   }
 
-  void _toggleImportant(String id) {
-    setState(() {
-      final todo = _todos.firstWhere((todo) => todo.id == id);
-      todo.isImportant = !todo.isImportant;
-    });
-  }
+  
 
   Future<void> _selectDate(BuildContext context, TodoItem todo) async {
     final DateTime? picked = await showDatePicker(
@@ -80,9 +115,9 @@ class _TodoPageState extends ConsumerState<TodoPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Theme.of(context).colorScheme.onPrimary,
-            ),
+                  primary: Theme.of(context).colorScheme.primary,
+                  onPrimary: Theme.of(context).colorScheme.onPrimary,
+                ),
           ),
           child: child!,
         );
@@ -124,7 +159,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -189,149 +224,202 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                           ],
                         ),
                       )
-                    : ListView.builder(
+                    : ReorderableListView.builder(
+                        onReorder: _reorderTodo,
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         itemCount: _todos.length,
                         itemBuilder: (context, index) {
                           final todo = _todos[index];
-                          return Card(
-                            elevation: 0,
-                            margin: const EdgeInsets.only(bottom: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(
-                                color: theme.colorScheme.outline.withOpacity(0.2),
+                          return Dismissible(
+                              key: ValueKey(todo.id),
+                              direction: DismissDirection.endToStart,
+                              confirmDismiss: (_) => _confirmDismiss(),
+                              onDismissed: (_) => _removeTodo(todo.id),
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 24.0),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.error,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Icon(
+                                  Icons.delete_outline,
+                                  color: theme.colorScheme.onError,
+                                ),
                               ),
-                            ),
-                            child: Theme(
-                              data: Theme.of(context).copyWith(
-                                dividerColor: Colors.transparent,
-                              ),
-                              child: ExpansionTile(
-                                leading: Checkbox(
-                                  value: todo.isCompleted,
-                                  onChanged: (_) => _toggleTodo(todo.id),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
+                              child: Card(
+                                elevation: 0,
+                                margin: const EdgeInsets.only(bottom: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(
+                                    color: theme.colorScheme.outline
+                                        .withOpacity(0.2),
                                   ),
                                 ),
-                                title: Text(
-                                  todo.title,
-                                  style: TextStyle(
-                                    decoration: todo.isCompleted
-                                        ? TextDecoration.lineThrough
-                                        : null,
-                                    color: todo.isCompleted
-                                        ? theme.colorScheme.outline
-                                        : null,
+                                child: Theme(
+                                  data: Theme.of(context).copyWith(
+                                    dividerColor: Colors.transparent,
                                   ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (todo.dueDate != null) ...[
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.calendar_today,
-                                            size: 14,
-                                            color: theme.colorScheme.primary,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            DateFormat('MMM d, y').format(todo.dueDate!),
-                                            style: theme.textTheme.bodySmall?.copyWith(
-                                              color: theme.colorScheme.primary,
-                                            ),
-                                          ),
-                                        ],
+                                  child: ExpansionTile(
+                                    leading: Checkbox(
+                                      value: todo.isCompleted,
+                                      onChanged: (_) => _toggleTodo(todo.id),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
                                       ),
-                                    ],
-                                    if (todo.subtasks.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      LinearProgressIndicator(
-                                        value: todo.progress,
-                                        backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(
-                                        todo.isImportant
-                                            ? Icons.favorite
-                                            : Icons.favorite_border,
-                                        color: todo.isImportant
-                                            ? Colors.red
+                                    ),
+                                    title: Text(
+                                      todo.title,
+                                      style: TextStyle(
+                                        decoration: todo.isCompleted
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                        color: todo.isCompleted
+                                            ? theme.colorScheme.outline
                                             : null,
                                       ),
-                                      onPressed: () => _toggleImportant(todo.id),
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.calendar_month),
-                                      onPressed: () => _selectDate(context, todo),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline),
-                                      onPressed: () => _removeTodo(todo.id),
-                                    ),
-                                  ],
-                                ),
-                                children: [
-                                  if (todo.subtasks.isNotEmpty)
-                                    ExpansionTile(
-                                      title: Text(
-                                        'Subtasks (${todo.subtasks.where((task) => task.isCompleted).length}/${todo.subtasks.length})',
-                                        style: theme.textTheme.titleSmall,
-                                      ),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                          child: Column(
-                                            children: todo.subtasks.map((subtask) => CheckboxListTile(
-                                              value: subtask.isCompleted,
-                                              onChanged: (_) =>
-                                                  _toggleSubtask(todo.id, subtask.id),
-                                              title: Text(
-                                                subtask.title,
-                                                style: TextStyle(
-                                                  decoration: subtask.isCompleted
-                                                      ? TextDecoration.lineThrough
-                                                      : null,
-                                                  color: subtask.isCompleted
-                                                      ? theme.colorScheme.outline
-                                                      : null,
+                                        if (todo.dueDate != null) ...[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.calendar_today,
+                                                size: 14,
+                                                color:
+                                                    theme.colorScheme.primary,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                DateFormat('MMM d, y')
+                                                    .format(todo.dueDate!),
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                  color:
+                                                      theme.colorScheme.primary,
                                                 ),
                                               ),
-                                              controlAffinity: ListTileControlAffinity.leading,
-                                              contentPadding: EdgeInsets.zero,
-                                            )).toList(),
+                                            ],
                                           ),
+                                        ],
+                                        if (todo.subtasks.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          LinearProgressIndicator(
+                                            value: todo.progress,
+                                            backgroundColor: theme
+                                                .colorScheme.primary
+                                                .withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(2),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                              Icons.notifications_outlined),
+                                          onPressed: () {
+                                            // TODO: Implement notification sending
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    'Notification feature coming soon!'),
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon:
+                                              const Icon(Icons.calendar_month),
+                                          onPressed: () =>
+                                              _selectDate(context, todo),
+                                        ),
+                                        IconButton(
+                                          icon:
+                                              const Icon(Icons.delete_outline),
+                                          onPressed: () => _removeTodo(todo.id),
                                         ),
                                       ],
                                     ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: OutlinedButton.icon(
-                                      onPressed: () => _showAddSubtaskDialog(todo),
-                                      icon: const Icon(Icons.add),
-                                      label: const Text('Add Subtask'),
-                                      style: OutlinedButton.styleFrom(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                    children: [
+                                      if (todo.subtasks.isNotEmpty)
+                                        ExpansionTile(
+                                          title: Text(
+                                            'Subtasks (${todo.subtasks.where((task) => task.isCompleted).length}/${todo.subtasks.length})',
+                                            style: theme.textTheme.titleSmall,
+                                          ),
+                                          children: [
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16.0),
+                                              child: Column(
+                                                children: todo.subtasks
+                                                    .map((subtask) =>
+                                                        CheckboxListTile(
+                                                          value: subtask
+                                                              .isCompleted,
+                                                          onChanged: (_) =>
+                                                              _toggleSubtask(
+                                                                  todo.id,
+                                                                  subtask.id),
+                                                          title: Text(
+                                                            subtask.title,
+                                                            style: TextStyle(
+                                                              decoration: subtask
+                                                                      .isCompleted
+                                                                  ? TextDecoration
+                                                                      .lineThrough
+                                                                  : null,
+                                                              color: subtask
+                                                                      .isCompleted
+                                                                  ? theme
+                                                                      .colorScheme
+                                                                      .outline
+                                                                  : null,
+                                                            ),
+                                                          ),
+                                                          controlAffinity:
+                                                              ListTileControlAffinity
+                                                                  .leading,
+                                                          contentPadding:
+                                                              EdgeInsets.zero,
+                                                        ))
+                                                    .toList(),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: OutlinedButton.icon(
+                                          onPressed: () =>
+                                              _showAddSubtaskDialog(todo),
+                                          icon: const Icon(Icons.add),
+                                          label: const Text('Add Subtask'),
+                                          style: OutlinedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ),
-                          );
+                                ),
+                              ));
                         },
                       ),
               ),
@@ -383,4 +471,4 @@ class _TodoPageState extends ConsumerState<TodoPage> {
       ),
     );
   }
-} 
+}

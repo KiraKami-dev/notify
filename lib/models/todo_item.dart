@@ -6,7 +6,7 @@ class TodoItem {
   bool isCompleted;
   DateTime? dueDate;
   List<SubTask> subtasks;
-  bool isImportant;
+  int order;
 
   TodoItem({
     String? id,
@@ -14,9 +14,10 @@ class TodoItem {
     this.isCompleted = false,
     this.dueDate,
     List<SubTask>? subtasks,
-    this.isImportant = false,
+    int? order,
   })  : id = id ?? const Uuid().v4(),
-        subtasks = subtasks ?? [];
+        subtasks = subtasks ?? [],
+        order = order ?? DateTime.now().millisecondsSinceEpoch;
 
   double get progress {
     if (subtasks.isEmpty) return isCompleted ? 1.0 : 0.0;
