@@ -269,6 +269,60 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     return confirmed ?? false;
   }
 
+  void _showQuickScheduleMenu(TodoItem todo) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.today),
+              title: const Text('Today'),
+              onTap: () {
+                setState(() {
+                  todo.dueDate = DateTime.now();
+                  todo.isRecurring = false;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.next_plan_outlined),
+              title: const Text('Tomorrow'),
+              onTap: () {
+                setState(() {
+                  todo.dueDate = DateTime.now().add(const Duration(days: 1));
+                  todo.isRecurring = false;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.repeat),
+              title: const Text('Recurring'),
+              onTap: () {
+                setState(() {
+                  todo.isRecurring = true;
+                  todo.dueDate = DateTime.now();
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Custom Date'),
+              onTap: () {
+                Navigator.pop(context);
+                _selectDate(context, todo);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -403,19 +457,17 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                             Row(
                                               children: [
                                                 Icon(
-                                                  Icons.calendar_today,
+                                                  todo.isRecurring ? Icons.repeat : Icons.calendar_today,
                                                   size: 14,
-                                                  color:
-                                                      theme.colorScheme.primary,
+                                                  color: theme.colorScheme.primary,
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Text(
-                                                  DateFormat('MMM d, y')
-                                                      .format(todo.dueDate!),
-                                                  style: theme.textTheme.bodySmall
-                                                      ?.copyWith(
-                                                    color:
-                                                        theme.colorScheme.primary,
+                                                  todo.isRecurring 
+                                                    ? 'Recurring - ${DateFormat('MMM d, y').format(todo.dueDate!)}'
+                                                    : DateFormat('MMM d, y').format(todo.dueDate!),
+                                                  style: theme.textTheme.bodySmall?.copyWith(
+                                                    color: theme.colorScheme.primary,
                                                   ),
                                                 ),
                                               ],
@@ -450,8 +502,11 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                             },
                                           ),
                                           IconButton(
-                                            icon: const Icon(Icons.calendar_month),
-                                            onPressed: () => _selectDate(context, todo),
+                                            icon: Icon(
+                                              todo.isRecurring ? Icons.repeat : Icons.calendar_month,
+                                              color: todo.isRecurring ? theme.colorScheme.primary : null,
+                                            ),
+                                            onPressed: () => _showQuickScheduleMenu(todo),
                                           ),
                                         ],
                                       ),
@@ -758,19 +813,17 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                             Row(
                                               children: [
                                                 Icon(
-                                                  Icons.calendar_today,
+                                                  todo.isRecurring ? Icons.repeat : Icons.calendar_today,
                                                   size: 14,
-                                                  color:
-                                                      theme.colorScheme.primary,
+                                                  color: theme.colorScheme.primary,
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Text(
-                                                  DateFormat('MMM d, y')
-                                                      .format(todo.dueDate!),
-                                                  style: theme.textTheme.bodySmall
-                                                      ?.copyWith(
-                                                    color:
-                                                        theme.colorScheme.primary,
+                                                  todo.isRecurring 
+                                                    ? 'Recurring - ${DateFormat('MMM d, y').format(todo.dueDate!)}'
+                                                    : DateFormat('MMM d, y').format(todo.dueDate!),
+                                                  style: theme.textTheme.bodySmall?.copyWith(
+                                                    color: theme.colorScheme.primary,
                                                   ),
                                                 ),
                                               ],
@@ -805,8 +858,11 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                             },
                                           ),
                                           IconButton(
-                                            icon: const Icon(Icons.calendar_month),
-                                            onPressed: () => _selectDate(context, todo),
+                                            icon: Icon(
+                                              todo.isRecurring ? Icons.repeat : Icons.calendar_month,
+                                              color: todo.isRecurring ? theme.colorScheme.primary : null,
+                                            ),
+                                            onPressed: () => _showQuickScheduleMenu(todo),
                                           ),
                                         ],
                                       ),

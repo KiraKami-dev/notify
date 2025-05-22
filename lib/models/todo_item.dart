@@ -7,6 +7,7 @@ class TodoItem {
   DateTime? dueDate;
   List<SubTask> subtasks;
   int order;
+  bool isRecurring;
 
   TodoItem({
     String? id,
@@ -15,6 +16,7 @@ class TodoItem {
     this.dueDate,
     List<SubTask>? subtasks,
     int? order,
+    this.isRecurring = false,
   })  : id = id ?? const Uuid().v4(),
         subtasks = subtasks ?? [],
         order = order ?? DateTime.now().millisecondsSinceEpoch;
