@@ -258,7 +258,7 @@ class _LatestNotificationsWidgetState
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

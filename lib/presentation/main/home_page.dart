@@ -50,13 +50,20 @@ class _HomePageState extends ConsumerState<HomePage> {
   List<Sticker> stickerItems = [];
   List<Sticker> customStickerItems = [];
   File? _customImage;
-  final _imagePicker = ImagePicker();
   List<Sticker> _favoriteStickers = [];
+  int _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
     _loadPartnerInfo();
+    _mainPageController.addListener(() {
+      if (_mainPageController.page != null) {
+        setState(() {
+          _currentPage = _mainPageController.page!.round();
+        });
+      }
+    });
   }
 
   Future<void> _loadPartnerInfo() async {
@@ -271,13 +278,13 @@ class _HomePageState extends ConsumerState<HomePage> {
           'Notify',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        centerTitle: false,
+        centerTitle: true,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.checklist),
+          icon: Icon(_currentPage == 1 ? Icons.notifications : Icons.checklist),
           onPressed: () {
             _mainPageController.animateToPage(
-              0,
+              _currentPage == 0 ? 1 : 0,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
             );
@@ -285,13 +292,9 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: const Icon(Icons.menu),
             onPressed: () {
-              _mainPageController.animateToPage(
-                1,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
+              Scaffold.of(context).openEndDrawer();
             },
           ),
           if (!connectedStatus)
@@ -433,8 +436,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           controller: _mainPageController,
           children: [
             
-            const TodoPage(),
-            // Home Page
+            
             Column(
               children: [
                 Expanded(
@@ -446,7 +448,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         children: [
                           // Latest Notifications
                           SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.23,
+                            height: MediaQuery.of(context).size.height * 0.243,
                             child: LatestNotificationsWidget(
                               userId: generatedCode,
                             ),
@@ -1039,6 +1041,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ],
             ),
+            const TodoPage(),
+            // Home Page
           ],
         ),
       ),
