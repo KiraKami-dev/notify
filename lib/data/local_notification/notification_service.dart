@@ -97,7 +97,7 @@ class NotificationService {
     for (final token in tokens) {
       try {
         final response = await http.post(
-          Uri.parse('${notificaiotnApiUrl}/scheduleNotification'),
+          Uri.parse('https://schedulenotification-pjkmgzabia-uc.a.run.app'),
           headers: {'Content-Type': 'application/json'},
           body: json.encode({
             'token': token,
@@ -105,11 +105,14 @@ class NotificationService {
             'body': title,
             'scheduledTime': scheduledTime.toIso8601String(),
             'taskId': taskId,
+            'image': '', // Optional image URL if you have one
           }),
         );
         
         if (response.statusCode != 200) {
           print('Failed to schedule notification: ${response.body}');
+        } else {
+          print('Successfully scheduled notification for ${scheduledTime.toIso8601String()}');
         }
       } catch (e) {
         print('Failed to schedule notification: $e');
