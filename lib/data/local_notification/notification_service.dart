@@ -5,6 +5,7 @@ import 'package:notify/config/const_variables.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin
@@ -19,6 +20,7 @@ class NotificationService {
 
     // Initialize timezone
     tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Asia/Kolkata')); // Set your local timezone
 
     await _flutterLocalNotificationsPlugin.initialize(
       initSettings,
@@ -91,64 +93,26 @@ class NotificationService {
     String? description,
     required List<String> tokens,
   }) async {
-    // Schedule local notification
-    final androidDetails = AndroidNotificationDetails(
-      'task_reminders',
-      'Task Reminders',
-      channelDescription: 'Notifications for task reminders',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-
-    final iosDetails = const DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    final scheduledDate = tz.TZDateTime.from(scheduledTime, tz.local);
-
-    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) {
-      print('Scheduled time is in the past, notification will not be scheduled');
-      return;
-    }
-
-    // Schedule local notification
-    await _flutterLocalNotificationsPlugin.zonedSchedule(
-      taskId.hashCode,
-      'Task Reminder: $title',
-      description ?? 'Time to complete your task!',
-      scheduledDate,
-      notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: taskId,
-    );
-
-    
+    // Send scheduled notification request for each token
     for (final token in tokens) {
       try {
-        await http.post(
-          Uri.parse(notificaiotnApiUrl),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: {
+        final response = await http.post(
+          Uri.parse('${notificaiotnApiUrl}/scheduleNotification'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
             'token': token,
-            'title': 'Task Reminder: $title',
-            'body': description ?? 'Time to complete your task!',
-            'data': {
-              'taskId': taskId,
-              'scheduledTime': scheduledTime.toIso8601String(),
-            },
-          },
+            'title': 'Task Reminder!',
+            'body': title,
+            'scheduledTime': scheduledTime.toIso8601String(),
+            'taskId': taskId,
+          }),
         );
+        
+        if (response.statusCode != 200) {
+          print('Failed to schedule notification: ${response.body}');
+        }
       } catch (e) {
-        print('Failed to send FCM notification: $e');
+        print('Failed to schedule notification: $e');
       }
     }
   }
@@ -160,7 +124,7 @@ class NotificationService {
   static Future<void> showTaskReminder({
     required String title,
     String? description,
-    required String userId,
+    required List<String> userId,
   }) async {
     // Show local notification
     final androidDetails = AndroidNotificationDetails(
