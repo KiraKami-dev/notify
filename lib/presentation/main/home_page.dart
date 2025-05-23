@@ -23,6 +23,9 @@ import 'package:notify/presentation/widgets/custom_sticker_dialog.dart';
 import 'package:notify/presentation/widgets/custom_sticker_view.dart';
 import 'package:notify/data/providers/favorite_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:notify/data/providers/profile_provider.dart';
+import 'package:notify/domain/user_profile_model.dart';
+import 'package:notify/presentation/widgets/profile_dialog.dart';
 
 enum StickerViewType { all, favorites, custom }
 
@@ -319,136 +322,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
         ],
       ),
-      endDrawer: connectedStatus
-          ? Drawer(
-              child: Column(
-                children: [
-                  DrawerHeader(
-                    // decoration: BoxDecoration(
-                    //   gradient: LinearGradient(
-                    //     begin: Alignment.topLeft,
-                    //     end: Alignment.bottomRight,
-                    //     colors: [
-                    //       theme.colorScheme.primary,
-                    //       theme.colorScheme.primary.withOpacity(0.8),
-                    //     ],
-                    //   ),
-                    // ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 12),
-                        Text(
-                          'Welcome!',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.home_rounded),
-                          title: const Text('Home'),
-                          selected: true,
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.history_rounded),
-                          title: const Text('History'),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => NotificationDetailPage(
-                                    userId: generatedCode),
-                              ),
-                            );
-                          },
-                        ),
-                        const Divider(),
-                        ListTile(
-                          leading: const Icon(Icons.favorite_rounded),
-                          title: const Text('Favorites'),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const FavoritesPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          leading:
-                              const Icon(Icons.add_photo_alternate_rounded),
-                          title: const Text('Custom Stickers'),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'New',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const CustomStickersPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const Divider(),
-                        ListTile(
-                          leading: _isLoading
-                              ? SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: theme.colorScheme.error,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.logout_rounded,
-                                  color: theme.colorScheme.error,
-                                ),
-                          title: Text(
-                            _isLoading ? 'Disconneting...' : 'Disconnet',
-                            style: TextStyle(color: theme.colorScheme.error),
-                          ),
-                          enabled: !_isLoading,
-                          onTap: () => _handleLogout(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            )
-          : null,
+      endDrawer: connectedStatus ? _buildDrawer(context, ref) : null,
       body: SafeArea(
         child: PageView(
           controller: _mainPageController,
@@ -1306,6 +1180,282 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: const Center(
           child: Icon(Icons.error_outline, color: Colors.grey, size: 40),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final userId = ref.read(getGeneratedCodeProvider) ?? '';
+    final userProfileAsync = ref.watch(userProfileProvider);
+
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.secondary,
+                ],
+              ),
+            ),
+            child: DrawerHeader(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => _showProfileDialog(context, ref),
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 12,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: userProfileAsync.when(
+                                data: (profile) => CircleAvatar(
+                                  radius: 35,
+                                  backgroundColor: theme.colorScheme.surface,
+                                  backgroundImage: profile?.avatarUrl != null
+                                      ? NetworkImage(profile!.avatarUrl!)
+                                      : null,
+                                  child: profile?.avatarUrl == null
+                                      ? Icon(
+                                          Icons.person,
+                                          size: 35,
+                                          color: theme.colorScheme.onSurface,
+                                        )
+                                      : null,
+                                ),
+                                loading: () => const CircleAvatar(
+                                  radius: 35,
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  ),
+                                ),
+                                error: (_, __) => CircleAvatar(
+                                  radius: 35,
+                                  backgroundColor: theme.colorScheme.surface,
+                                  child: Icon(
+                                    Icons.error_outline,
+                                    color: theme.colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.secondary,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.edit,
+                                  size: 18,
+                                  color: theme.colorScheme.onSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Welcome!',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            userProfileAsync.when(
+                              data: (profile) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        profile?.mood ??
+                                            'How\'s your heart feeling?',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                          color: Colors.white.withOpacity(0.9),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              loading: () => const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              ),
+                              error: (_, __) => Text(
+                                'Error loading mood',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home_rounded),
+            title: const Text('Home'),
+            selected: true,
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.history_rounded),
+            title: const Text('History'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NotificationDetailPage(userId: userId),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.favorite_rounded),
+            title: const Text('Favorites'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FavoritesPage(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.add_photo_alternate_rounded),
+            title: const Text('Custom Stickers'),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'New',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CustomStickersPage(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: _isLoading
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: theme.colorScheme.error,
+                    ),
+                  )
+                : Icon(
+                    Icons.logout_rounded,
+                    color: theme.colorScheme.error,
+                  ),
+            title: Text(
+              _isLoading ? 'Disconneting...' : 'Disconnet',
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+            enabled: !_isLoading,
+            onTap: () => _handleLogout(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showProfileDialog(BuildContext context, WidgetRef ref) async {
+    final userId = ref.read(getGeneratedCodeProvider) ?? '';
+    final currentProfile = await ref.read(userProfileProvider.future);
+
+    await showDialog(
+      context: context,
+      builder: (context) => ProfileDialog(
+        userId: userId,
+        currentProfile: currentProfile,
+        onProfileUpdated: (updatedProfile) {
+          ref.invalidate(userProfileProvider);
+        },
       ),
     );
   }
