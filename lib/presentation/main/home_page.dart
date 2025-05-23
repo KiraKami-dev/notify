@@ -16,6 +16,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:notify/presentation/notification/notification_detail_page.dart';
 import 'package:notify/presentation/favorites/favorites_page.dart';
+import 'package:notify/presentation/custom_stickers/custom_stickers_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:notify/presentation/widgets/custom_sticker_dialog.dart';
@@ -318,118 +319,136 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
         ],
       ),
-      endDrawer: connectedStatus ? Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              // decoration: BoxDecoration(
-              //   gradient: LinearGradient(
-              //     begin: Alignment.topLeft,
-              //     end: Alignment.bottomRight,
-              //     colors: [
-              //       theme.colorScheme.primary,
-              //       theme.colorScheme.primary.withOpacity(0.8),
-              //     ],
-              //   ),
-              // ),
+      endDrawer: connectedStatus
+          ? Drawer(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 12),
-                  Text(
-                    'Welcome!',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.home_rounded),
-                    title: const Text('Home'),
-                    selected: true,
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.history_rounded),
-                    title: const Text('History'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              NotificationDetailPage(userId: generatedCode),
-                        ),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.favorite_rounded),
-                    title: const Text('Favorites'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'New',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const FavoritesPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: _isLoading
-                        ? SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: theme.colorScheme.error,
-                            ),
-                          )
-                        : Icon(
-                            Icons.logout_rounded,
-                            color: theme.colorScheme.error,
+                  DrawerHeader(
+                    // decoration: BoxDecoration(
+                    //   gradient: LinearGradient(
+                    //     begin: Alignment.topLeft,
+                    //     end: Alignment.bottomRight,
+                    //     colors: [
+                    //       theme.colorScheme.primary,
+                    //       theme.colorScheme.primary.withOpacity(0.8),
+                    //     ],
+                    //   ),
+                    // ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 12),
+                        Text(
+                          'Welcome!',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
                           ),
-                    title: Text(
-                      _isLoading ? 'Disconneting...' : 'Disconnet',
-                      style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                        const SizedBox(height: 4),
+                      ],
                     ),
-                    enabled: !_isLoading,
-                    onTap: () => _handleLogout(context),
                   ),
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.home_rounded),
+                          title: const Text('Home'),
+                          selected: true,
+                          onTap: () => Navigator.pop(context),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.history_rounded),
+                          title: const Text('History'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => NotificationDetailPage(
+                                    userId: generatedCode),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(),
+                        ListTile(
+                          leading: const Icon(Icons.favorite_rounded),
+                          title: const Text('Favorites'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const FavoritesPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading:
+                              const Icon(Icons.add_photo_alternate_rounded),
+                          title: const Text('Custom Stickers'),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'New',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const CustomStickersPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(),
+                        ListTile(
+                          leading: _isLoading
+                              ? SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: theme.colorScheme.error,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.logout_rounded,
+                                  color: theme.colorScheme.error,
+                                ),
+                          title: Text(
+                            _isLoading ? 'Disconneting...' : 'Disconnet',
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                          enabled: !_isLoading,
+                          onTap: () => _handleLogout(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                 ],
               ),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ) : null,
+            )
+          : null,
       body: SafeArea(
         child: PageView(
           controller: _mainPageController,
@@ -1068,12 +1087,14 @@ class _HomePageState extends ConsumerState<HomePage> {
       String imageUrl = '';
       if (_currentViewType == StickerViewType.custom) {
         // Get the URL from the custom sticker items
-        if (customStickerItems.isNotEmpty && _currentImageIndex < customStickerItems.length) {
+        if (customStickerItems.isNotEmpty &&
+            _currentImageIndex < customStickerItems.length) {
           imageUrl = customStickerItems[_currentImageIndex].url;
         }
       } else {
         // Get the URL from the regular sticker items
-        if (stickerItems.isNotEmpty && _currentImageIndex < stickerItems.length) {
+        if (stickerItems.isNotEmpty &&
+            _currentImageIndex < stickerItems.length) {
           imageUrl = stickerItems[_currentImageIndex].url;
         }
       }

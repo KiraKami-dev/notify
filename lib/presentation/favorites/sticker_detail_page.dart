@@ -1,18 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:notify/domain/sticker_model.dart';
+import 'package:notify/presentation/widgets/edit_sticker_dialog.dart';
+import 'package:notify/data/local_storage/shared_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class StickerDetailPage extends StatelessWidget {
+class StickerDetailPage extends ConsumerWidget {
   final Sticker sticker;
   final VoidCallback onUnfavorite;
+  final Function(Sticker updatedSticker)? onStickerUpdated;
 
   const StickerDetailPage({
     required this.sticker,
     required this.onUnfavorite,
+    this.onStickerUpdated,
     super.key,
   });
 
+  Future<void> _showEditDialog(BuildContext context, WidgetRef ref) async {
+    final userId = ref.read(getGeneratedCodeProvider) ?? '';
+    await showDialog(
+      context: context,
+      builder: (context) => EditStickerDialog(
+        sticker: sticker,
+        userId: userId,
+        onStickerUpdated: (updatedSticker) {
+          if (onStickerUpdated != null) {
+            onStickerUpdated!(updatedSticker);
+          }
+        },
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
 
@@ -26,7 +47,7 @@ class StickerDetailPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Hero(
-                  tag: 'favorite_${sticker.id}',
+                  tag: 'custom_${sticker.id}',
                   child: Image.network(
                     sticker.url,
                     fit: BoxFit.cover,
@@ -97,15 +118,14 @@ class StickerDetailPage extends StatelessWidget {
                                 Navigator.pop(context);
                               },
                             ),
-                            _buildActionButton(
-                              context,
-                              icon: Icons.share_rounded,
-                              label: 'Share\nSticker',
-                              color: theme.colorScheme.secondary,
-                              onTap: () {
-                                // TODO: Implement share
-                              },
-                            ),
+                            if (onStickerUpdated != null)
+                              _buildActionButton(
+                                context,
+                                icon: Icons.edit_rounded,
+                                label: 'Edit\nSticker',
+                                color: theme.colorScheme.secondary,
+                                onTap: () => _showEditDialog(context, ref),
+                              ),
                           ],
                         ),
                       ),
