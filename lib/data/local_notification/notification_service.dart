@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
+import 'package:notify/config/const_variables.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -139,7 +140,7 @@ class NotificationService {
         // Don't send to current device as we already scheduled local notification
         try {
           await http.post(
-            Uri.parse('YOUR_CLOUD_FUNCTION_URL'), // Replace with your cloud function URL
+            Uri.parse(notificaiotnApiUrl), // Replace with your cloud function URL
             headers: {
               'Content-Type': 'application/json',
             },
@@ -206,7 +207,7 @@ class NotificationService {
         // Don't send to current device as we already showed local notification
         try {
           await http.post(
-            Uri.parse('YOUR_CLOUD_FUNCTION_URL'), // Replace with your cloud function URL
+            Uri.parse(notificaiotnApiUrl), // Replace with your cloud function URL
             headers: {
               'Content-Type': 'application/json',
             },
