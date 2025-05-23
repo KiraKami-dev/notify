@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:notify/models/todo_item.dart';
 import 'package:notify/data/firebase/firebase_todo.dart';
 import 'package:notify/data/local_notification/notification_service.dart';
+import 'package:notify/data/local_storage/shared_auth.dart';
+import 'package:notify/presentation/widgets/connection_dialog.dart';
 
 class TodoPage extends ConsumerStatefulWidget {
   final String userId;
@@ -464,9 +466,50 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     );
   }
 
+  void _showConnectionModal() {
+    showDialog(
+      context: context,
+      builder: (context) => UserConnectionModal(
+        fetch: () {
+          setState(() {});
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isConnected = ref.watch(getConnectedStatusProvider);
+    
+    if (!isConnected) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.cloud_off,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Please connect with your partner to use todos',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _showConnectionModal,
+              icon: const Icon(Icons.link),
+              label: const Text('Connect Now'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       body: Container(
@@ -475,8 +518,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.primary.withOpacity(0.05),
-              theme.colorScheme.secondary.withOpacity(0.05),
+              Theme.of(context).colorScheme.primary.withOpacity(0.05),
+              Theme.of(context).colorScheme.secondary.withOpacity(0.05),
             ],
           ),
         ),
@@ -490,9 +533,9 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                   children: [
                     Text(
                       'Todo List',
-                      style: theme.textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     IconButton(
@@ -504,8 +547,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                       icon: Icon(
                         _isReorderEnabled ? Icons.lock_open : Icons.lock_outline,
                         color: _isReorderEnabled
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.outline,
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outline,
                       ),
                       tooltip: _isReorderEnabled ? 'Disable Reorder' : 'Enable Reorder',
                     ),
@@ -520,7 +563,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                       return Center(
                         child: Text(
                           'Error: ${snapshot.error}',
-                          style: TextStyle(color: theme.colorScheme.error),
+                          style: TextStyle(color: Theme.of(context).colorScheme.error),
                         ),
                       );
                     }
@@ -541,21 +584,21 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                             Icon(
                               Icons.note_add_rounded,
                               size: 64,
-                              color: theme.colorScheme.primary.withOpacity(0.5),
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Add your first todo!',
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                color: theme.colorScheme.primary,
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Tap the button below to get started',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -572,7 +615,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                             itemCount: todos.length,
                             itemBuilder: (context, index) {
                               final todo = todos[index];
-                              return _buildTodoCard(todo, theme);
+                              return _buildTodoCard(todo, Theme.of(context));
                             },
                           )
                         : ListView.builder(
@@ -600,7 +643,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                   alignment: Alignment.centerLeft,
                                   padding: const EdgeInsets.only(left: 24.0),
                                   decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary,
+                                    color: Theme.of(context).colorScheme.primary,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Row(
@@ -608,13 +651,13 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                     children: [
                                       Icon(
                                         Icons.edit_outlined,
-                                        color: theme.colorScheme.onPrimary,
+                                        color: Theme.of(context).colorScheme.onPrimary,
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
                                         'Edit',
                                         style: TextStyle(
-                                          color: theme.colorScheme.onPrimary,
+                                          color: Theme.of(context).colorScheme.onPrimary,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -625,7 +668,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                   alignment: Alignment.centerRight,
                                   padding: const EdgeInsets.only(right: 24.0),
                                   decoration: BoxDecoration(
-                                    color: theme.colorScheme.error,
+                                    color: Theme.of(context).colorScheme.error,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Row(
@@ -634,19 +677,19 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                       Text(
                                         'Delete',
                                         style: TextStyle(
-                                          color: theme.colorScheme.onError,
+                                          color: Theme.of(context).colorScheme.onError,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       Icon(
                                         Icons.delete_outline,
-                                        color: theme.colorScheme.onError,
+                                        color: Theme.of(context).colorScheme.onError,
                                       ),
                                     ],
                                   ),
                                 ),
-                                child: _buildTodoCard(todo, theme),
+                                child: _buildTodoCard(todo, Theme.of(context)),
                               );
                             },
                           );
@@ -657,11 +700,11 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                 padding: const EdgeInsets.all(16.0),
                 child: Card(
                   elevation: 0,
-                  color: theme.colorScheme.surface,
+                  color: Theme.of(context).colorScheme.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
-                      color: theme.colorScheme.outline.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                     ),
                   ),
                   child: Padding(
@@ -676,7 +719,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                               border: InputBorder.none,
                               prefixIcon: Icon(
                                 Icons.add_task,
-                                color: theme.colorScheme.primary,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                             onSubmitted: (_) => _addTodo(),
@@ -686,8 +729,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                           onPressed: _addTodo,
                           icon: const Icon(Icons.add),
                           style: IconButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primary,
-                            foregroundColor: theme.colorScheme.onPrimary,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                       ],
