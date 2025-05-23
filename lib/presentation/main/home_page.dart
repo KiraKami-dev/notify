@@ -1048,7 +1048,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ],
             ),
-            TodoPage(userId: generatedCode),
+            TodoPage(),
             // Home Page
           ],
         ),
