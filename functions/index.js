@@ -122,7 +122,7 @@ exports.scheduleNotification = onRequest(async (req, res) => {
   try {
     const queue = getFunctions().taskQueue("handleScheduledNotification", {
       region: "us-central1",
-      extensionId: "handleScheduledNotification",
+      extensionId: "",
     });
 
     // Parse the scheduled time and ensure it's in UTC
