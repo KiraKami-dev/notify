@@ -776,7 +776,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                       title: todo.title,
                       description:
                           'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
-                      userId: generatedCode,
+                      userId: [myTokenId, otherTokenId],
                     );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
