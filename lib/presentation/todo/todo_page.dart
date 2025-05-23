@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:notify/data/firebase/firebase_connect.dart';
+import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/models/todo_item.dart';
 import 'package:notify/data/firebase/firebase_todo.dart';
 import 'package:notify/data/local_notification/notification_service.dart';
@@ -8,11 +10,8 @@ import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
 
 class TodoPage extends ConsumerStatefulWidget {
-  final String userId;
-
   const TodoPage({
     super.key,
-    required this.userId,
   });
 
   @override
@@ -25,6 +24,34 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   final _editController = TextEditingController();
   bool _isReorderEnabled = false;
   bool _isSubtaskReorderEnabled = false;
+
+  String myType = '';
+  String generatedCode = '';
+  String myTokenId = '';
+  String otherTokenId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    myTokenId = ref.read(getMainTokenIdProvider) ?? '';
+    myType = ref.read(getTypeUserProvider) ?? '';
+    generatedCode = ref.read(getGeneratedCodeProvider) ?? '';
+
+    partnerToken();
+  }
+
+  void partnerToken() async {
+    if (generatedCode.isNotEmpty && myType.isNotEmpty && myTokenId.isNotEmpty) {
+      String? partnerToken = await FirebaseConnect.fetchPartnerToken(
+        code: generatedCode,
+        typeUser: myType,
+      );
+
+      if (partnerToken != null) {
+        otherTokenId = partnerToken;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -71,7 +98,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     for (int i = 0; i < todos.length; i++) {
       todos[i].order = i;
       await FirebaseTodo.updateTodo(
-        userId: widget.userId,
+        userId: generatedCode,
         todo: todos[i],
       );
     }
@@ -91,7 +118,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     }
 
     await FirebaseTodo.updateTodo(
-      userId: widget.userId,
+      userId: generatedCode,
       todo: todo,
     );
   }
@@ -100,7 +127,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     if (_todoController.text.isNotEmpty) {
       final todo = TodoItem(title: _todoController.text);
       await FirebaseTodo.addTodo(
-        userId: widget.userId,
+        userId: generatedCode,
         todo: todo,
       );
 
@@ -115,7 +142,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
 
   Future<void> _removeTodo(String id) async {
     await FirebaseTodo.deleteTodo(
-      userId: widget.userId,
+      userId: generatedCode,
       todoId: id,
     );
   }
@@ -123,7 +150,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   Future<void> _toggleTodo(TodoItem todo) async {
     todo.isCompleted = !todo.isCompleted;
     await FirebaseTodo.updateTodo(
-      userId: widget.userId,
+      userId: generatedCode,
       todo: todo,
     );
   }
@@ -132,7 +159,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     final subtask = todo.subtasks.firstWhere((task) => task.id == subtaskId);
     subtask.isCompleted = !subtask.isCompleted;
     await FirebaseTodo.updateTodo(
-      userId: widget.userId,
+      userId: generatedCode,
       todo: todo,
     );
   }
@@ -141,7 +168,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     if (_subtaskController.text.isNotEmpty) {
       todo.subtasks.add(SubTask(title: _subtaskController.text));
       await FirebaseTodo.updateTodo(
-        userId: widget.userId,
+        userId: generatedCode,
         todo: todo,
       );
       _subtaskController.clear();
@@ -152,7 +179,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   Future<void> _selectDate(BuildContext context, TodoItem todo) async {
     final DateTime initialDate = todo.dueDate ?? DateTime.now();
     DateTime? selectedDateTime;
-    
+
     await showDialog<DateTime>(
       context: context,
       barrierDismissible: false,
@@ -165,7 +192,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
           if (selectedDateTime != null && context.mounted) {
             todo.dueDate = selectedDateTime;
             await FirebaseTodo.updateTodo(
-              userId: widget.userId,
+              userId: generatedCode,
               todo: todo,
             );
 
@@ -174,8 +201,9 @@ class _TodoPageState extends ConsumerState<TodoPage> {
               taskId: todo.id,
               title: todo.title,
               scheduledTime: todo.dueDate!,
-              description: 'Due: ${DateFormat('MMM d, y h:mm a').format(todo.dueDate!)}',
-              userId: widget.userId,
+              description:
+                  'Due: ${DateFormat('MMM d, y h:mm a').format(todo.dueDate!)}',
+              tokens: [myTokenId, otherTokenId],
             );
 
             setState(() {});
@@ -234,7 +262,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
               if (_editController.text.isNotEmpty) {
                 todo.title = _editController.text;
                 await FirebaseTodo.updateTodo(
-                  userId: widget.userId,
+                  userId: generatedCode,
                   todo: todo,
                 );
 
@@ -247,7 +275,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                     scheduledTime: todo.dueDate!,
                     description:
                         'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
-                    userId: widget.userId,
+                    tokens: [myTokenId, otherTokenId],
                   );
                 }
 
@@ -285,7 +313,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
               if (_editController.text.isNotEmpty) {
                 subtask.title = _editController.text;
                 await FirebaseTodo.updateTodo(
-                  userId: widget.userId,
+                  userId: generatedCode,
                   todo: todo,
                 );
                 Navigator.pop(context);
@@ -331,86 +359,6 @@ class _TodoPageState extends ConsumerState<TodoPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.today),
-              title: const Text('Today'),
-              subtitle: const Text('Set reminder for today'),
-              onTap: () async {
-                Navigator.pop(context);
-                final now = DateTime.now();
-                final TimeOfDay? pickedTime = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay.fromDateTime(now),
-                );
-
-                if (pickedTime != null && context.mounted) {
-                  final scheduledDateTime = DateTime(
-                    now.year,
-                    now.month,
-                    now.day,
-                    pickedTime.hour,
-                    pickedTime.minute,
-                  );
-
-                  todo.dueDate = scheduledDateTime;
-                  await FirebaseTodo.updateTodo(
-                    userId: widget.userId,
-                    todo: todo,
-                  );
-
-                  await NotificationService.cancelTaskNotification(todo.id);
-                  await NotificationService.scheduleTaskNotification(
-                    taskId: todo.id,
-                    title: todo.title,
-                    scheduledTime: todo.dueDate!,
-                    description: 'Due: ${DateFormat('MMM d, y h:mm a').format(todo.dueDate!)}',
-                    userId: widget.userId,
-                  );
-
-                  setState(() {});
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.next_plan_outlined),
-              title: const Text('Tomorrow'),
-              subtitle: const Text('Set reminder for tomorrow'),
-              onTap: () async {
-                Navigator.pop(context);
-                final tomorrow = DateTime.now().add(const Duration(days: 1));
-                final TimeOfDay? pickedTime = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay.fromDateTime(tomorrow),
-                );
-
-                if (pickedTime != null && context.mounted) {
-                  final scheduledDateTime = DateTime(
-                    tomorrow.year,
-                    tomorrow.month,
-                    tomorrow.day,
-                    pickedTime.hour,
-                    pickedTime.minute,
-                  );
-
-                  todo.dueDate = scheduledDateTime;
-                  await FirebaseTodo.updateTodo(
-                    userId: widget.userId,
-                    todo: todo,
-                  );
-
-                  await NotificationService.cancelTaskNotification(todo.id);
-                  await NotificationService.scheduleTaskNotification(
-                    taskId: todo.id,
-                    title: todo.title,
-                    scheduledTime: todo.dueDate!,
-                    description: 'Due: ${DateFormat('MMM d, y h:mm a').format(todo.dueDate!)}',
-                    userId: widget.userId,
-                  );
-
-                  setState(() {});
-                }
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.repeat),
               title: const Text('Recurring'),
               subtitle: const Text('Set daily recurring reminder'),
@@ -434,7 +382,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                   todo.dueDate = scheduledDateTime;
                   todo.isRecurring = true;
                   await FirebaseTodo.updateTodo(
-                    userId: widget.userId,
+                    userId: generatedCode,
                     todo: todo,
                   );
 
@@ -443,8 +391,9 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                     taskId: todo.id,
                     title: todo.title,
                     scheduledTime: todo.dueDate!,
-                    description: 'Due: ${DateFormat('MMM d, y h:mm a').format(todo.dueDate!)}',
-                    userId: widget.userId,
+                    description:
+                        'Due: ${DateFormat('MMM d, y h:mm a').format(todo.dueDate!)}',
+                    tokens: [myTokenId, otherTokenId],
                   );
 
                   setState(() {});
@@ -545,19 +494,23 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                         });
                       },
                       icon: Icon(
-                        _isReorderEnabled ? Icons.lock_open : Icons.lock_outline,
+                        _isReorderEnabled
+                            ? Icons.lock_open
+                            : Icons.lock_outline,
                         color: _isReorderEnabled
                             ? Theme.of(context).colorScheme.primary
                             : Theme.of(context).colorScheme.outline,
                       ),
-                      tooltip: _isReorderEnabled ? 'Disable Reorder' : 'Enable Reorder',
+                      tooltip: _isReorderEnabled
+                          ? 'Disable Reorder'
+                          : 'Enable Reorder',
                     ),
                   ],
                 ),
               ),
               Expanded(
                 child: StreamBuilder<List<TodoItem>>(
-                  stream: FirebaseTodo.streamTodos(widget.userId),
+                  stream: FirebaseTodo.streamTodos(generatedCode),
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return Center(
@@ -611,7 +564,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                             buildDefaultDragHandles: false,
                             onReorder: (oldIndex, newIndex) =>
                                 _reorderTodo(todos, oldIndex, newIndex),
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
                             itemCount: todos.length,
                             itemBuilder: (context, index) {
                               final todo = todos[index];
@@ -619,7 +573,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                             },
                           )
                         : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
                             itemCount: todos.length,
                             itemBuilder: (context, index) {
                               final todo = todos[index];
@@ -627,7 +582,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                 key: ValueKey(todo.id),
                                 direction: DismissDirection.horizontal,
                                 confirmDismiss: (direction) async {
-                                  if (direction == DismissDirection.endToStart) {
+                                  if (direction ==
+                                      DismissDirection.endToStart) {
                                     return _confirmDismiss();
                                   } else {
                                     _editTodo(todo);
@@ -635,7 +591,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                   }
                                 },
                                 onDismissed: (direction) {
-                                  if (direction == DismissDirection.endToStart) {
+                                  if (direction ==
+                                      DismissDirection.endToStart) {
                                     _removeTodo(todo.id);
                                   }
                                 },
@@ -817,8 +774,9 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                   if (todo.dueDate != null) {
                     await NotificationService.showTaskReminder(
                       title: todo.title,
-                      description: 'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
-                      userId: widget.userId,
+                      description:
+                          'Due: ${DateFormat('MMM d, y').format(todo.dueDate!)}',
+                      userId: generatedCode,
                     );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -862,13 +820,17 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                         });
                       },
                       icon: Icon(
-                        _isSubtaskReorderEnabled ? Icons.lock_open : Icons.lock_outline,
+                        _isSubtaskReorderEnabled
+                            ? Icons.lock_open
+                            : Icons.lock_outline,
                         color: _isSubtaskReorderEnabled
                             ? theme.colorScheme.primary
                             : theme.colorScheme.outline,
                         size: 20,
                       ),
-                      tooltip: _isSubtaskReorderEnabled ? 'Disable Reorder' : 'Enable Reorder',
+                      tooltip: _isSubtaskReorderEnabled
+                          ? 'Disable Reorder'
+                          : 'Enable Reorder',
                     ),
                   ],
                 ),
@@ -888,7 +850,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                   index: todo.subtasks.indexOf(subtask),
                                   child: CheckboxListTile(
                                     value: subtask.isCompleted,
-                                    onChanged: (_) => _toggleSubtask(todo, subtask.id),
+                                    onChanged: (_) =>
+                                        _toggleSubtask(todo, subtask.id),
                                     title: Text(
                                       subtask.title,
                                       style: TextStyle(
@@ -900,7 +863,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                             : null,
                                       ),
                                     ),
-                                    controlAffinity: ListTileControlAffinity.leading,
+                                    controlAffinity:
+                                        ListTileControlAffinity.leading,
                                     contentPadding: EdgeInsets.zero,
                                   ),
                                 ),
@@ -916,7 +880,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                 key: ValueKey(subtask.id),
                                 direction: DismissDirection.horizontal,
                                 confirmDismiss: (direction) async {
-                                  if (direction == DismissDirection.endToStart) {
+                                  if (direction ==
+                                      DismissDirection.endToStart) {
                                     return _confirmSubtaskDismiss();
                                   } else {
                                     _editSubtask(todo, subtask.id);
@@ -924,10 +889,12 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                   }
                                 },
                                 onDismissed: (direction) {
-                                  if (direction == DismissDirection.endToStart) {
-                                    todo.subtasks.removeWhere((task) => task.id == subtask.id);
+                                  if (direction ==
+                                      DismissDirection.endToStart) {
+                                    todo.subtasks.removeWhere(
+                                        (task) => task.id == subtask.id);
                                     FirebaseTodo.updateTodo(
-                                      userId: widget.userId,
+                                      userId: generatedCode,
                                       todo: todo,
                                     );
                                   }
@@ -984,7 +951,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                 ),
                                 child: CheckboxListTile(
                                   value: subtask.isCompleted,
-                                  onChanged: (_) => _toggleSubtask(todo, subtask.id),
+                                  onChanged: (_) =>
+                                      _toggleSubtask(todo, subtask.id),
                                   title: Text(
                                     subtask.title,
                                     style: TextStyle(
@@ -996,7 +964,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                                           : null,
                                     ),
                                   ),
-                                  controlAffinity: ListTileControlAffinity.leading,
+                                  controlAffinity:
+                                      ListTileControlAffinity.leading,
                                   contentPadding: EdgeInsets.zero,
                                 ),
                               );
@@ -1092,7 +1061,8 @@ class _DateTimePickerDialogState extends State<DateTimePickerDialog> {
                           context: context,
                           initialDate: selectedDate,
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
                         );
                         if (picked != null) {
                           setState(() {

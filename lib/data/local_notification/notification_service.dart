@@ -89,7 +89,7 @@ class NotificationService {
     required String title,
     required DateTime scheduledTime,
     String? description,
-    required String userId,
+    required List<String> tokens,
   }) async {
     // Schedule local notification
     final androidDetails = AndroidNotificationDetails(
@@ -114,8 +114,7 @@ class NotificationService {
     final scheduledDate = tz.TZDateTime.from(scheduledTime, tz.local);
 
     if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) {
-      print(
-          'Scheduled time is in the past, notification will not be scheduled');
+      print('Scheduled time is in the past, notification will not be scheduled');
       return;
     }
 
@@ -130,33 +129,26 @@ class NotificationService {
       payload: taskId,
     );
 
-    // Get all device tokens for the user
-    final prefs = await SharedPreferences.getInstance();
-    final deviceTokens = prefs.getStringList('device_tokens_$userId') ?? [];
-
-    // Send FCM notification to all user's devices
-    for (final token in deviceTokens) {
-      if (token != await _firebaseMessaging.getToken()) {
-        // Don't send to current device as we already scheduled local notification
-        try {
-          await http.post(
-            Uri.parse(notificaiotnApiUrl), // Replace with your cloud function URL
-            headers: {
-              'Content-Type': 'application/json',
+    
+    for (final token in tokens) {
+      try {
+        await http.post(
+          Uri.parse(notificaiotnApiUrl),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: {
+            'token': token,
+            'title': 'Task Reminder: $title',
+            'body': description ?? 'Time to complete your task!',
+            'data': {
+              'taskId': taskId,
+              'scheduledTime': scheduledTime.toIso8601String(),
             },
-            body: {
-              'token': token,
-              'title': 'Task Reminder: $title',
-              'body': description ?? 'Time to complete your task!',
-              'data': {
-                'taskId': taskId,
-                'scheduledTime': scheduledTime.toIso8601String(),
-              },
-            },
-          );
-        } catch (e) {
-          print('Failed to send FCM notification: $e');
-        }
+          },
+        );
+      } catch (e) {
+        print('Failed to send FCM notification: $e');
       }
     }
   }
