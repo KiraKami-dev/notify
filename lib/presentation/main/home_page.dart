@@ -291,14 +291,15 @@ class _HomePageState extends ConsumerState<HomePage> {
           },
         ),
         actions: [
-          Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openEndDrawer();
-              },
+          if (connectedStatus)
+            Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  Scaffold.of(context).openEndDrawer();
+                },
+              ),
             ),
-          ),
           if (!connectedStatus)
             IconButton(
               icon: const Icon(Icons.person_add),
@@ -317,7 +318,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
         ],
       ),
-      endDrawer: Drawer(
+      endDrawer: connectedStatus ? Drawer(
         child: Column(
           children: [
             DrawerHeader(
@@ -428,7 +429,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             const SizedBox(height: 8),
           ],
         ),
-      ),
+      ) : null,
       body: SafeArea(
         child: PageView(
           controller: _mainPageController,
