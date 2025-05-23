@@ -3,6 +3,7 @@ const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 const {getFunctions} = require("firebase-admin/functions");
 const {onTaskDispatched} = require("firebase-functions/v2/tasks");
+const {GoogleAuth} = require("google-auth-library");
 
 admin.initializeApp();
 
@@ -35,7 +36,33 @@ exports.sendNotification = onRequest(async (request, response) => {
   }
 });
 
-// Function to handle scheduled notifications
+// Function to get the Cloud Function URL
+
+/**
+ * Gets the URL for a Cloud Function.
+ * @param {string} name The name of the Cloud Function.
+ * @param {string} [location="us-central1"] The location of the Cloud Function.
+ * @return {Promise<string>} The URL of Cloud Function, or null if the function
+ *     does not exist.
+ */
+async function getFunctionUrl(name, location = "us-central1") {
+  const auth = new GoogleAuth({
+    scopes: "https://www.googleapis.com/auth/cloud-platform",
+  });
+  const projectId = await auth.getProjectId();
+  const url = "https://cloudfunctions.googleapis.com/v2beta/" +
+    `projects/${projectId}/locations/${location}/functions/${name}`;
+
+  const client = await auth.getClient();
+  const res = await client.request({url});
+  const uri = res.data && res.data.serviceConfig && res.data.serviceConfig.uri;
+  if (!uri) {
+    throw new Error(`Unable to retrieve uri for function at ${url}`);
+  }
+  return uri;
+}
+
+// Task queue function for handling scheduled notifications
 exports.handleScheduledNotification = onTaskDispatched(
     {
       retryConfig: {
@@ -120,10 +147,8 @@ exports.scheduleNotification = onRequest(async (req, res) => {
   }
 
   try {
-    const queue = getFunctions().taskQueue("handleScheduledNotification", {
-      region: "us-central1",
-      extensionId: "",
-    });
+    const queue = getFunctions().taskQueue("handleScheduledNotification");
+    const targetUri = await getFunctionUrl("handleScheduledNotification");
 
     // Parse the scheduled time and ensure it's in UTC
     const scheduledDate = new Date(scheduledTime);
@@ -164,6 +189,8 @@ exports.scheduleNotification = onRequest(async (req, res) => {
 
     await queue.enqueue(taskData, {
       scheduleTime: scheduledDate,
+      dispatchDeadlineSeconds: 60 * 5, // 5 minutes
+      uri: targetUri,
     });
 
     logger.info("Task enqueued successfully", {
