@@ -85,7 +85,6 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
       print('Notification permission status: ${settings.authorizationStatus}');
 
       final token = await messaging.getToken();
-      print('Reinitializing Firebase Messaging token: $token');
 
       if (token != null) {
         // Update both SharedPreferences and provider

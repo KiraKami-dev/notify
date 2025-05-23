@@ -1065,12 +1065,20 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     try {
       String imageUrl = '';
-      if (_currentViewType == StickerViewType.custom && _customImage != null) {
-        // TODO: Implement image upload to Firebase Storage
-        // Using a valid placeholder image URL for now
-        imageUrl = 'https://picsum.photos/200';
+      if (_currentViewType == StickerViewType.custom) {
+        // Get the URL from the custom sticker items
+        if (customStickerItems.isNotEmpty && _currentImageIndex < customStickerItems.length) {
+          imageUrl = customStickerItems[_currentImageIndex].url;
+        }
       } else {
-        imageUrl = stickerItems[_currentImageIndex].url;
+        // Get the URL from the regular sticker items
+        if (stickerItems.isNotEmpty && _currentImageIndex < stickerItems.length) {
+          imageUrl = stickerItems[_currentImageIndex].url;
+        }
+      }
+
+      if (imageUrl.isEmpty) {
+        throw 'No valid sticker selected';
       }
 
       final response = await http.post(
@@ -1100,7 +1108,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         throw 'Server returned status code: ${response.statusCode}';
       }
     } catch (error) {
-      _showSnackBar('Failed to send message', Colors.red);
+      _showSnackBar('Failed to send message: $error', Colors.red);
     } finally {
       setState(() => _isLoading = false);
     }
