@@ -98,7 +98,6 @@ class FirebaseTodo {
   }
 
   static Stream<List<TodoItem>> streamTodos(String userId) {
-    print('Streaming todos for user: $userId');
     return FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -106,10 +105,8 @@ class FirebaseTodo {
         .orderBy('order')
         .snapshots()
         .map((snapshot) {
-          print('Received ${snapshot.docs.length} todos from Firebase');
           return snapshot.docs.map((doc) {
             final data = doc.data();
-            print('Processing todo data: $data');
             return TodoItem(
               id: data['id'] as String,
               title: data['title'] as String,

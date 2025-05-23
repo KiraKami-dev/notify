@@ -6,6 +6,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:async';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin
@@ -93,29 +94,69 @@ class NotificationService {
     String? description,
     required List<String> tokens,
   }) async {
+    if (tokens.isEmpty) {
+      print('No tokens provided for notification');
+      return;
+    }
+
+    // Convert to UTC for consistent timezone handling
+    final utcScheduledTime = scheduledTime.toUtc();
+    
+    // Validate scheduled time is in the future
+    if (utcScheduledTime.isBefore(DateTime.now().toUtc())) {
+      print('Cannot schedule notification in the past');
+      return;
+    }
+
     // Send scheduled notification request for each token
     for (final token in tokens) {
+      if (token.isEmpty) {
+        print('Skipping empty token');
+        continue;
+      }
+
       try {
+        print('Scheduling notification for time: ${utcScheduledTime.toIso8601String()}');
+        
+        final requestBody = {
+          'token': token,
+          'title': 'Task Reminder!',
+          'body': title,
+          'scheduledTime': utcScheduledTime.toIso8601String(),
+          'taskId': taskId,
+          'image': '',
+        };
+        
+        print('Request body: ${json.encode(requestBody)}');
+        
         final response = await http.post(
           Uri.parse('https://schedulenotification-pjkmgzabia-uc.a.run.app'),
-          headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'token': token,
-            'title': 'Task Reminder!',
-            'body': title,
-            'scheduledTime': scheduledTime.toIso8601String(),
-            'taskId': taskId,
-            'image': '', // Optional image URL if you have one
-          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: json.encode(requestBody),
+        ).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            throw TimeoutException('Request timed out');
+          },
         );
+        
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
         
         if (response.statusCode != 200) {
           print('Failed to schedule notification: ${response.body}');
+          throw Exception('Failed to schedule notification: ${response.body}');
         } else {
-          print('Successfully scheduled notification for ${scheduledTime.toIso8601String()}');
+          print('Successfully scheduled notification for ${utcScheduledTime.toIso8601String()}');
         }
+      } on TimeoutException {
+        print('Request timed out while scheduling notification');
       } catch (e) {
         print('Failed to schedule notification: $e');
+        rethrow; // Rethrow to handle in the UI if needed
       }
     }
   }
