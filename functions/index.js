@@ -76,7 +76,7 @@ exports.handleScheduledNotification = onTaskDispatched(
     },
     async (data) => {
       logger.info("Task received", {data});
-      const {token, title, body, taskId} = data;
+      const {token, title, body, taskId} = data.data;
 
       if (!token || !title || !body) {
         logger.error("Missing required fields in task data", {data});
