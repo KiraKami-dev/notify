@@ -69,6 +69,7 @@ class NotificationService {
       channelDescription: 'This channel is used for important notifications.',
       importance: Importance.high,
       priority: Priority.high,
+      icon: 'ic_notification',
       styleInformation: bigPictureStyleInformation,
     );
 
@@ -176,6 +177,7 @@ class NotificationService {
       'Task Reminders',
       channelDescription: 'Notifications for task reminders',
       importance: Importance.high,
+      icon: 'ic_notification',
       priority: Priority.high,
     );
 

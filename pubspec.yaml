@@ -59,6 +59,7 @@ dev_dependencies:
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
+  android_notification_icons: ^0.0.1
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
   riverpod_generator: ^2.4.0
@@ -78,6 +79,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/appLogo.png
+    - assets/transparent_appLogo.png
     - assets/splash_screen.png
   #   - images/a_dot_ham.jpeg
 flutter_launcher_icons:
@@ -122,3 +124,6 @@ flutter_native_splash:
   android_12:
     image: assets/splash_screen.png
     color: "#ff5854"
+android_notification_icons:
+  image_path: 'assets/transparent_appLogo.png'
+  icon_name: 'ic_notification'
