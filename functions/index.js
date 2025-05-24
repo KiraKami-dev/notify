@@ -76,7 +76,7 @@ exports.handleScheduledNotification = onTaskDispatched(
     },
     async (data) => {
       logger.info("Task received", {data});
-      const {token, title, body, image, taskId} = data;
+      const {token, title, body, taskId} = data;
 
       if (!token || !title || !body) {
         logger.error("Missing required fields in task data", {data});
@@ -87,11 +87,9 @@ exports.handleScheduledNotification = onTaskDispatched(
         notification: {
           title,
           body,
-          image,
         },
         data: {
           taskId: taskId || "",
-          image: image || "",
         },
         token,
       };
@@ -119,7 +117,7 @@ exports.scheduleNotification = onRequest(async (req, res) => {
     headers: req.headers,
   });
 
-  const {token, title, body, image, scheduledTime, taskId} = req.body;
+  const {token, title, body, taskId, image, scheduledTime} = req.body;
 
   // Validate request body
   if (!req.body || typeof req.body !== "object") {

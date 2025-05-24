@@ -121,8 +121,8 @@ class NotificationService {
         
         final requestBody = {
           'token': token,
-          'title': 'Task Reminder!',
-          'body': title,
+          'title': title,
+          'body': description ?? 'Time to complete your task!',
           'scheduledTime': utcScheduledTime.toIso8601String(),
           'taskId': taskId,
           'image': '',
