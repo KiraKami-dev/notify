@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/presentation/notification/notification_detail_page.dart';
+import 'package:notify/core/services/logger.dart';
 
 class LatestNotificationsWidget extends ConsumerStatefulWidget {
   final String userId;
@@ -98,7 +99,7 @@ class _LatestNotificationsWidgetState
                         image: NetworkImage(notif.stickerUrl),
                         fit: BoxFit.cover,
                         onError: (exception, stackTrace) {
-                          print('Error loading notification image: $exception');
+                          AppLogger.warn('Error loading notification image', error: exception, stackTrace: stackTrace);
                         },
                       ),
                     ),

@@ -7,6 +7,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'package:notify/core/services/logger.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin
@@ -27,7 +28,7 @@ class NotificationService {
       initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         // Handle notification tap
-        print('Notification tapped: ${response.payload}');
+        AppLogger.debug('Notification tapped: ${response.payload}');
       },
     );
 
@@ -58,8 +59,8 @@ class NotificationService {
             summaryText: body,
           );
         }
-      } catch (e) {
-        print('Failed to fetch image: $e');
+      } catch (e, s) {
+        AppLogger.warn('Failed to fetch notification image', error: e, stackTrace: s);
       }
     }
 
@@ -96,7 +97,7 @@ class NotificationService {
     required List<String> tokens,
   }) async {
     if (tokens.isEmpty) {
-      print('No tokens provided for notification');
+      AppLogger.warn('No tokens provided for notification');
       return;
     }
 
@@ -105,19 +106,19 @@ class NotificationService {
     
     // Validate scheduled time is in the future
     if (utcScheduledTime.isBefore(DateTime.now().toUtc())) {
-      print('Cannot schedule notification in the past');
+      AppLogger.warn('Cannot schedule notification in the past');
       return;
     }
 
     // Send scheduled notification request for each token
     for (final token in tokens) {
       if (token.isEmpty) {
-        print('Skipping empty token');
+        AppLogger.warn('Skipping empty token');
         continue;
       }
 
       try {
-        print('Scheduling notification for time: ${utcScheduledTime.toIso8601String()}');
+        AppLogger.info('Scheduling notification for time: ${utcScheduledTime.toIso8601String()}');
         
         final requestBody = {
           'token': token,
@@ -128,7 +129,7 @@ class NotificationService {
           'image': '',
         };
         
-        print('Request body: ${json.encode(requestBody)}');
+        AppLogger.debug('Request body: ${json.encode(requestBody)}');
         
         final response = await http.post(
           Uri.parse('https://schedulenotification-pjkmgzabia-uc.a.run.app'),
@@ -144,19 +145,19 @@ class NotificationService {
           },
         );
         
-        print('Response status: ${response.statusCode}');
-        print('Response body: ${response.body}');
+        AppLogger.debug('Response status: ${response.statusCode}');
+        AppLogger.debug('Response body: ${response.body}');
         
         if (response.statusCode != 200) {
-          print('Failed to schedule notification: ${response.body}');
+          AppLogger.warn('Failed to schedule notification: ${response.body}');
           throw Exception('Failed to schedule notification: ${response.body}');
         } else {
-          print('Successfully scheduled notification for ${utcScheduledTime.toIso8601String()}');
+          AppLogger.info('Successfully scheduled notification for ${utcScheduledTime.toIso8601String()}');
         }
       } on TimeoutException {
-        print('Request timed out while scheduling notification');
-      } catch (e) {
-        print('Failed to schedule notification: $e');
+        AppLogger.warn('Request timed out while scheduling notification');
+      } catch (e, s) {
+        AppLogger.error('Failed to schedule notification', error: e, stackTrace: s);
         rethrow; // Rethrow to handle in the UI if needed
       }
     }
@@ -222,8 +223,8 @@ class NotificationService {
               },
             },
           );
-        } catch (e) {
-          print('Failed to send FCM notification: $e');
+        } catch (e, s) {
+          AppLogger.error('Failed to send FCM notification', error: e, stackTrace: s);
         }
       }
     }

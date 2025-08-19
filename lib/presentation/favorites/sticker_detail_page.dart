@@ -17,7 +17,7 @@ class StickerDetailPage extends ConsumerWidget {
   });
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref) async {
-    final userId = ref.read(getGeneratedCodeProvider) ?? '';
+    final userId = ref.read(getGeneratedCodeProvider);
     await showDialog(
       context: context,
       builder: (context) => EditStickerDialog(
@@ -114,7 +114,13 @@ class StickerDetailPage extends ConsumerWidget {
                               label: 'Send\nNotification',
                               color: theme.colorScheme.primary,
                               onTap: () {
-                                // TODO: Implement send notification
+                                // Placeholder: trigger send flow from parent or show info
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text('Open Home to send this sticker as a notification'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
                                 Navigator.pop(context);
                               },
                             ),

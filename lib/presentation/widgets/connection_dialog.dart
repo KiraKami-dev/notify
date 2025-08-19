@@ -7,6 +7,7 @@ import 'package:notify/data/firebase/firebase_connect.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:notify/core/services/logger.dart';
 
 class UserConnectionModal extends ConsumerStatefulWidget {
   const UserConnectionModal({
@@ -64,13 +65,13 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
             ? _generatedCode
             : _codeController.text.replaceAll(RegExp(r'[^0-9]'), '');
 
-    print('Starting connection listener for code: $codeToListen');
+    AppLogger.debug('Starting connection listener for code: $codeToListen');
 
     if (codeToListen != '--- ---' && codeToListen.isNotEmpty) {
       _connectionListener = FirebaseConnect.listenToConnectionStatus(
         codeToListen,
       ).listen((isConnected) async {
-        print('Connection status changed: $isConnected');
+        AppLogger.info('Connection status changed: $isConnected');
         if (isConnected && mounted) {
           // Cancel the listener immediately to prevent multiple triggers
           _connectionListener?.cancel();
@@ -111,8 +112,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
               Navigator.of(context).pop(); // Close the dialog
             }
           } catch (e, stackTrace) {
-            print('Error in connection listener: $e');
-            print('Stack trace: $stackTrace');
+            AppLogger.error('Error in connection listener', error: e, stackTrace: stackTrace);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -623,18 +623,18 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
 
     try {
       final myTokenId = ref.read(getMainTokenIdProvider);
-      print('Current token ID for code generation: $myTokenId');
+      AppLogger.debug('Current token ID for code generation: $myTokenId');
 
       if (myTokenId.isEmpty) {
         // Try to get the token from SharedPreferences directly
         final prefs = await SharedPreferences.getInstance();
         final storedToken = prefs.getString('mainTokenId');
-        print('Stored token from SharedPreferences: $storedToken');
+        AppLogger.debug('Stored token from SharedPreferences: $storedToken');
 
         if (storedToken != null && storedToken.isNotEmpty) {
           // Update the provider with the stored token
           ref.read(setMainTokenIdProvider(tokenId: storedToken));
-          print('Updated provider with stored token');
+          AppLogger.info('Updated provider with stored token');
           
           // Now try to generate the code with the stored token
           await _refreshShareCode();
@@ -659,8 +659,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
         await _refreshShareCode();
       }
     } catch (e, stackTrace) {
-      print('Error in _refreshCode: $e');
-      print('Stack trace: $stackTrace');
+      AppLogger.error('Error in _refreshCode', error: e, stackTrace: stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -679,7 +678,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
 
   Future<void> _refreshShareCode() async {
     final myTokenId = ref.read(getMainTokenIdProvider);
-    print('Attempting to generate code with token: $myTokenId');
+    AppLogger.debug('Attempting to generate code with token: $myTokenId');
     
     if (myTokenId.isEmpty) {
       throw Exception('No token ID available - Firebase Messaging not initialized');
@@ -691,7 +690,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
       final newCode = await FirebaseConnect.createShareCode(
         mainTokenId: myTokenId,
       );
-      print('Generated new code: $newCode');
+      AppLogger.info('Generated new code: $newCode');
 
       // start 10‑minute expiry
       _countdownTimer?.cancel();
@@ -718,8 +717,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
       // Start listening for connection status after generating the code
       _startConnectionListener();
     } catch (e, stackTrace) {
-      print('Error generating code: $e');
-      print('Stack trace: $stackTrace');
+      AppLogger.error('Error generating code', error: e, stackTrace: stackTrace);
       if (!mounted) return;
       setState(() {
         _shareLoading = false;
@@ -1213,33 +1211,5 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
     );
   }
 
-  Widget _buildShareOption(
-    IconData icon,
-    String label,
-    ColorScheme colorScheme,
-  ) {
-    return Column(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: IconButton(
-            icon: Icon(icon, color: colorScheme.primary),
-            onPressed: () {
-              // Handle share action
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
-        ),
-      ],
-    );
-  }
+  // Removed unused _buildShareOption helper to satisfy lints
 }

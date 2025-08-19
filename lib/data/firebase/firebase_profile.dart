@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:notify/domain/user_profile_model.dart';
+import 'package:notify/core/services/logger.dart';
 
 class FirebaseProfile {
   static final _firestore = FirebaseFirestore.instance;
@@ -21,7 +22,7 @@ class FirebaseProfile {
       }
       return null;
     } catch (e) {
-      print('Error getting user profile: $e');
+      AppLogger.error('Error getting user profile', error: e);
       return null;
     }
   }
@@ -35,7 +36,7 @@ class FirebaseProfile {
           .doc('user_profile')
           .set(profile.toMap());
     } catch (e) {
-      print('Error updating user profile: $e');
+      AppLogger.error('Error updating user profile', error: e);
       rethrow;
     }
   }
@@ -51,7 +52,7 @@ class FirebaseProfile {
       final uploadTask = await storageRef.putFile(imageFile);
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
-      print('Error uploading avatar: $e');
+      AppLogger.error('Error uploading avatar', error: e);
       rethrow;
     }
   }

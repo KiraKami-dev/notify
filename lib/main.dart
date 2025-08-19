@@ -4,6 +4,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:notify/data/local_notification/notification_service.dart';
+import 'package:notify/core/services/logger.dart';
+import 'package:notify/config/firebase_options.dart';
+import 'dart:async';
 import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/presentation/main/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,22 +14,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Firebase Cloud Function URL
 
 void main() async {
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    print('Initializing Firebase...');
-    await Firebase.initializeApp();
-    print('Firebase initialized');
+  WidgetsFlutterBinding.ensureInitialized();
 
-    print('Initializing notification service...');
-    await NotificationService.init();
-    print('Notification service initialized');
+  // Global error handling for Flutter framework errors
+  FlutterError.onError = (FlutterErrorDetails details) {
+    AppLogger.error('FlutterError', error: details.exception, stackTrace: details.stack);
+    FlutterError.presentError(details);
+  };
 
-    print('Initializing shared preferences...');
-    await SharedPrefs().init();
-    print('Shared preferences initialized');
+  // Zone-level error handling for uncaught async errors
+  await runZonedGuarded<Future<void>>(() async {
+    try {
+      AppLogger.info('Initializing Firebase...');
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      AppLogger.info('Firebase initialized');
 
-    print('Setting up Firebase Messaging...');
-    final messaging = FirebaseMessaging.instance;
+      AppLogger.info('Initializing notification service...');
+      await NotificationService.init();
+      AppLogger.info('Notification service initialized');
+
+      AppLogger.info('Initializing shared preferences...');
+      await SharedPrefs().init();
+      AppLogger.info('Shared preferences initialized');
+
+      AppLogger.info('Setting up Firebase Messaging...');
+      final messaging = FirebaseMessaging.instance;
     
     // Request notification permissions first
     final settings = await messaging.requestPermission(
@@ -35,33 +47,35 @@ void main() async {
       sound: true,
       provisional: false,
     );
-    print('Notification permission status: ${settings.authorizationStatus}');
+    AppLogger.info('Notification permission status: ${settings.authorizationStatus}');
 
     // Get the token
     final token = await messaging.getToken();
-    print('Firebase Messaging token: $token');
+    AppLogger.debug('Firebase Messaging token: $token');
 
     if (token != null) {
       // Save token to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('mainTokenId', token);
-      print('Token saved to SharedPreferences');
+      AppLogger.info('Token saved to SharedPreferences');
     } else {
-      print('Warning: Firebase token is null');
+      AppLogger.warn('Firebase token is null');
     }
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Received foreground message');
-      NotificationService.showForegroundNotification(message);
-    });
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        AppLogger.debug('Received foreground message');
+        NotificationService.showForegroundNotification(message);
+      });
 
-    runApp(const ProviderScope(child: NotifyApp()));
-  } catch (e, stackTrace) {
-    print('Error during initialization: $e');
-    print('Stack trace: $stackTrace');
-    // Still run the app even if there's an error
-    runApp(const ProviderScope(child: NotifyApp()));
-  }
+      runApp(const ProviderScope(child: NotifyApp()));
+    } catch (e, stackTrace) {
+      AppLogger.error('Error during initialization', error: e, stackTrace: stackTrace);
+      // Still run the app even if there's an error
+      runApp(const ProviderScope(child: NotifyApp()));
+    }
+  }, (error, stack) {
+    AppLogger.error('Uncaught zone error', error: error, stackTrace: stack);
+  });
 }
 
 class NotifyApp extends ConsumerStatefulWidget {
@@ -82,7 +96,7 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
     try {
       final messaging = FirebaseMessaging.instance;
       final settings = await messaging.requestPermission();
-      print('Notification permission status: ${settings.authorizationStatus}');
+      AppLogger.info('Notification permission status: ${settings.authorizationStatus}');
 
       final token = await messaging.getToken();
 
@@ -91,13 +105,12 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('mainTokenId', token);
         ref.read(setMainTokenIdProvider(tokenId: token));
-        print('Token updated in both SharedPreferences and provider');
+        AppLogger.info('Token updated in both SharedPreferences and provider');
       } else {
-        print('Warning: Firebase token is null during reinitialization');
+        AppLogger.warn('Firebase token is null during reinitialization');
       }
     } catch (e, stackTrace) {
-      print('Error initializing Firebase Messaging: $e');
-      print('Stack trace: $stackTrace');
+      AppLogger.error('Error initializing Firebase Messaging', error: e, stackTrace: stackTrace);
     }
   }
 

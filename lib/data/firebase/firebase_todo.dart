@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:notify/models/todo_item.dart';
+import 'package:notify/core/services/logger.dart';
 
 class FirebaseTodo {
   static Future<void> addTodo({
@@ -7,8 +8,8 @@ class FirebaseTodo {
     required TodoItem todo,
   }) async {
     try {
-      print('Adding todo for user: $userId');
-      print('Todo data: ${todo.toString()}');
+      AppLogger.debug('Adding todo for user: $userId');
+      AppLogger.debug('Todo data: ${todo.toString()}');
       
       final todosRef = FirebaseFirestore.instance
           .collection('users')
@@ -31,11 +32,11 @@ class FirebaseTodo {
         }).toList(),
       };
 
-      print('Firebase todo data to be saved: $todoData');
+      AppLogger.debug('Firebase todo data to be saved: $todoData');
       await todosRef.set(todoData);
-      print('Todo successfully added to Firebase');
+      AppLogger.info('Todo successfully added to Firebase');
     } catch (e) {
-      print('Error adding todo to Firebase: $e');
+      AppLogger.error('Error adding todo to Firebase', error: e);
       rethrow;
     }
   }
@@ -45,8 +46,8 @@ class FirebaseTodo {
     required TodoItem todo,
   }) async {
     try {
-      print('Updating todo for user: $userId');
-      print('Todo data: ${todo.toString()}');
+      AppLogger.debug('Updating todo for user: $userId');
+      AppLogger.debug('Todo data: ${todo.toString()}');
       
       final todosRef = FirebaseFirestore.instance
           .collection('users')
@@ -68,11 +69,11 @@ class FirebaseTodo {
         }).toList(),
       };
 
-      print('Firebase todo data to be updated: $todoData');
+      AppLogger.debug('Firebase todo data to be updated: $todoData');
       await todosRef.update(todoData);
-      print('Todo successfully updated in Firebase');
+      AppLogger.info('Todo successfully updated in Firebase');
     } catch (e) {
-      print('Error updating todo in Firebase: $e');
+      AppLogger.error('Error updating todo in Firebase', error: e);
       rethrow;
     }
   }
@@ -82,7 +83,7 @@ class FirebaseTodo {
     required String todoId,
   }) async {
     try {
-      print('Deleting todo for user: $userId, todoId: $todoId');
+      AppLogger.debug('Deleting todo for user: $userId, todoId: $todoId');
       final todosRef = FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
@@ -90,9 +91,9 @@ class FirebaseTodo {
           .doc(todoId);
 
       await todosRef.delete();
-      print('Todo successfully deleted from Firebase');
+      AppLogger.info('Todo successfully deleted from Firebase');
     } catch (e) {
-      print('Error deleting todo from Firebase: $e');
+      AppLogger.error('Error deleting todo from Firebase', error: e);
       rethrow;
     }
   }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:notify/domain/sticker_model.dart';
+import 'package:notify/core/services/logger.dart';
 
 class FirebaseStickers {
   static final stickersCollection = FirebaseFirestore.instance.collection(
@@ -47,7 +48,7 @@ class FirebaseStickers {
 
       return customStickerId;
     } catch (e) {
-      print('Error uploading custom sticker: $e');
+      AppLogger.error('Error uploading custom sticker', error: e);
       rethrow;
     }
   }
@@ -72,7 +73,7 @@ class FirebaseStickers {
         );
       }).toList();
     } catch (e) {
-      print('Error fetching custom stickers: $e');
+      AppLogger.error('Error fetching custom stickers', error: e);
       return [];
     }
   }

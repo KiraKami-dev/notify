@@ -17,15 +17,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:notify/presentation/notification/notification_detail_page.dart';
 import 'package:notify/presentation/favorites/favorites_page.dart';
 import 'package:notify/presentation/custom_stickers/custom_stickers_page.dart';
-import 'package:image_picker/image_picker.dart';
+// import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:notify/presentation/widgets/custom_sticker_dialog.dart';
 import 'package:notify/presentation/widgets/custom_sticker_view.dart';
 import 'package:notify/data/providers/favorite_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:notify/data/providers/profile_provider.dart';
-import 'package:notify/domain/user_profile_model.dart';
+// import 'package:notify/domain/user_profile_model.dart';
 import 'package:notify/presentation/widgets/profile_dialog.dart';
+import 'package:notify/core/services/logger.dart';
 
 enum StickerViewType { all, favorites, custom }
 
@@ -44,7 +45,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   final _pageController = PageController(viewportFraction: 0.85);
   final _mainPageController = PageController();
   bool _isLoading = false;
-  String? _partnerStatus;
+  // String? _partnerStatus;
   String? _partnerToken;
   String generatedCode = "";
   String myType = "";
@@ -53,7 +54,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   bool connectedStatus = false;
   List<Sticker> stickerItems = [];
   List<Sticker> customStickerItems = [];
-  File? _customImage;
+  // File? _customImage;
   List<Sticker> _favoriteStickers = [];
   int _currentPage = 0;
 
@@ -72,22 +73,18 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Future<void> _loadPartnerInfo() async {
     try {
-      print('Loading partner info...');
+      AppLogger.debug('Loading partner info...');
 
-      // Initialize empty lists/values if null
-      stickerItems = stickerItems ?? [];
-      customStickerItems = customStickerItems ?? [];
-      _favoriteStickers = _favoriteStickers ?? [];
-      _partnerToken = _partnerToken ?? '';
-      myType = myType ?? '';
+      // Initialize defaults where needed
+      _partnerToken ??= '';
 
       final tempConnectionStatus = ref.read(getConnectedStatusProvider);
       String code = ref.read(getGeneratedCodeProvider) ?? '';
-      print('Connection status: $tempConnectionStatus, Code: $code');
+      AppLogger.info('Connection status: $tempConnectionStatus, Code: $code');
 
       if (code.isNotEmpty) {
         bool checkCode = await FirebaseConnect.codeExists(code);
-        print('Code exists: $checkCode');
+        AppLogger.debug('Code exists: $checkCode');
 
         if (checkCode) {
           setState(() {
@@ -113,7 +110,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           code: code,
           typeUser: myType,
         );
-        print('Partner token: $partnerToken');
+        AppLogger.debug('Partner token: $partnerToken');
         if (partnerToken != null && partnerToken.isNotEmpty) {
           setState(() {
             _partnerToken = partnerToken;
@@ -144,8 +141,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         _updateMessageFields();
       }
     } catch (e, stackTrace) {
-      print('Error loading partner info: $e');
-      print('Stack trace: $stackTrace');
+      AppLogger.error('Error loading partner info', error: e, stackTrace: stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -162,17 +158,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _loadInitialStickers() async {
     try {
       final fetchedStickers = await FirebaseStickers.fetchStickers();
-      if (fetchedStickers != null) {
-        setState(() {
-          stickerItems = fetchedStickers;
-        });
-        print('Stickers fetched: ${stickerItems.length}');
-      } else {
-        print('No stickers returned from Firebase');
-        stickerItems = [];
-      }
+      setState(() {
+        stickerItems = fetchedStickers;
+      });
+      AppLogger.info('Stickers fetched: ${stickerItems.length}');
     } catch (e) {
-      print('Error fetching stickers: $e');
+      AppLogger.error('Error fetching stickers', error: e);
       stickerItems = [];
     }
   }
@@ -223,9 +214,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             customStickerItems = fetchedCustomStickers;
           });
         }
-        print('Custom stickers fetched: ${customStickerItems.length}');
+        AppLogger.info('Custom stickers fetched: ${customStickerItems.length}');
       } catch (e) {
-        print('Error fetching custom stickers: $e');
+        AppLogger.error('Error fetching custom stickers', error: e);
         if (mounted) {
           setState(() {
             customStickerItems = [];
@@ -247,7 +238,6 @@ class _HomePageState extends ConsumerState<HomePage> {
         currentStickers = customStickerItems;
         break;
       case StickerViewType.all:
-      default:
         currentStickers = stickerItems;
         break;
     }
@@ -255,9 +245,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (currentStickers.isNotEmpty &&
         _currentImageIndex < currentStickers.length) {
       setState(() {
-        _titleController.text = currentStickers[_currentImageIndex].title ?? '';
-        _messageController.text =
-            currentStickers[_currentImageIndex].body ?? '';
+        _titleController.text = currentStickers[_currentImageIndex].title;
+        _messageController.text = currentStickers[_currentImageIndex].body;
       });
     } else {
       setState(() {
@@ -270,7 +259,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final screenHeight = MediaQuery.of(context).size.height;
     // final availableHeight =
     //     screenHeight - MediaQuery.of(context).padding.top - kToolbarHeight;
 
@@ -1033,7 +1021,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         });
       }
     } catch (e) {
-      print('Error in loadFavorites: $e');
+      AppLogger.error('Error in loadFavorites', error: e);
     }
   }
 
@@ -1133,7 +1121,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         generatedCode = "";
         myType = "";
         _partnerToken = null;
-        _partnerStatus = null;
+        // _partnerStatus = null;
         stickerItems.forEach((sticker) => sticker.isFavorite = false);
       });
 
@@ -1186,7 +1174,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _buildDrawer(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final userId = ref.read(getGeneratedCodeProvider) ?? '';
+    final userId = ref.read(getGeneratedCodeProvider);
     final userProfileAsync = ref.watch(userProfileProvider);
 
     return Drawer(
@@ -1445,7 +1433,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _showProfileDialog(BuildContext context, WidgetRef ref) async {
-    final userId = ref.read(getGeneratedCodeProvider) ?? '';
+    final userId = ref.read(getGeneratedCodeProvider);
     final currentProfile = await ref.read(userProfileProvider.future);
 
     await showDialog(
