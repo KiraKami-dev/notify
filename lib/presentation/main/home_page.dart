@@ -1421,7 +1421,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     color: theme.colorScheme.error,
                   ),
             title: Text(
-              _isLoading ? 'Disconneting...' : 'Disconnet',
+              _isLoading ? 'Disconnecting...' : 'Disconnect',
               style: TextStyle(color: theme.colorScheme.error),
             ),
             enabled: !_isLoading,

@@ -13,10 +13,9 @@ String _$getFavoriteIdsHash() => r'f85b900f622cbff692216c37b41dd22a543bd827';
 final getFavoriteIdsProvider = AutoDisposeProvider<Set<String>>.internal(
   getFavoriteIds,
   name: r'getFavoriteIdsProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$getFavoriteIdsHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$getFavoriteIdsHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
@@ -65,15 +64,21 @@ class ToggleFavoriteIdFamily extends Family<AsyncValue<void>> {
   /// Adds or removes one ID, then saves back to SharedPreferences
   ///
   /// Copied from [toggleFavoriteId].
-  ToggleFavoriteIdProvider call({required String stickerId}) {
-    return ToggleFavoriteIdProvider(stickerId: stickerId);
+  ToggleFavoriteIdProvider call({
+    required String stickerId,
+  }) {
+    return ToggleFavoriteIdProvider(
+      stickerId: stickerId,
+    );
   }
 
   @override
   ToggleFavoriteIdProvider getProviderOverride(
     covariant ToggleFavoriteIdProvider provider,
   ) {
-    return call(stickerId: provider.stickerId);
+    return call(
+      stickerId: provider.stickerId,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -98,21 +103,24 @@ class ToggleFavoriteIdProvider extends AutoDisposeFutureProvider<void> {
   /// Adds or removes one ID, then saves back to SharedPreferences
   ///
   /// Copied from [toggleFavoriteId].
-  ToggleFavoriteIdProvider({required String stickerId})
-    : this._internal(
-        (ref) =>
-            toggleFavoriteId(ref as ToggleFavoriteIdRef, stickerId: stickerId),
-        from: toggleFavoriteIdProvider,
-        name: r'toggleFavoriteIdProvider',
-        debugGetCreateSourceHash:
-            const bool.fromEnvironment('dart.vm.product')
-                ? null
-                : _$toggleFavoriteIdHash,
-        dependencies: ToggleFavoriteIdFamily._dependencies,
-        allTransitiveDependencies:
-            ToggleFavoriteIdFamily._allTransitiveDependencies,
-        stickerId: stickerId,
-      );
+  ToggleFavoriteIdProvider({
+    required String stickerId,
+  }) : this._internal(
+          (ref) => toggleFavoriteId(
+            ref as ToggleFavoriteIdRef,
+            stickerId: stickerId,
+          ),
+          from: toggleFavoriteIdProvider,
+          name: r'toggleFavoriteIdProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$toggleFavoriteIdHash,
+          dependencies: ToggleFavoriteIdFamily._dependencies,
+          allTransitiveDependencies:
+              ToggleFavoriteIdFamily._allTransitiveDependencies,
+          stickerId: stickerId,
+        );
 
   ToggleFavoriteIdProvider._internal(
     super._createNotifier, {
@@ -171,8 +179,7 @@ mixin ToggleFavoriteIdRef on AutoDisposeFutureProviderRef<void> {
 }
 
 class _ToggleFavoriteIdProviderElement
-    extends AutoDisposeFutureProviderElement<void>
-    with ToggleFavoriteIdRef {
+    extends AutoDisposeFutureProviderElement<void> with ToggleFavoriteIdRef {
   _ToggleFavoriteIdProviderElement(super.provider);
 
   @override
@@ -192,15 +199,21 @@ class SetConnectedStatusFamily extends Family<AsyncValue<void>> {
   const SetConnectedStatusFamily();
 
   /// See also [setConnectedStatus].
-  SetConnectedStatusProvider call({required bool status}) {
-    return SetConnectedStatusProvider(status: status);
+  SetConnectedStatusProvider call({
+    required bool status,
+  }) {
+    return SetConnectedStatusProvider(
+      status: status,
+    );
   }
 
   @override
   SetConnectedStatusProvider getProviderOverride(
     covariant SetConnectedStatusProvider provider,
   ) {
-    return call(status: provider.status);
+    return call(
+      status: provider.status,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -221,21 +234,24 @@ class SetConnectedStatusFamily extends Family<AsyncValue<void>> {
 /// See also [setConnectedStatus].
 class SetConnectedStatusProvider extends AutoDisposeFutureProvider<void> {
   /// See also [setConnectedStatus].
-  SetConnectedStatusProvider({required bool status})
-    : this._internal(
-        (ref) =>
-            setConnectedStatus(ref as SetConnectedStatusRef, status: status),
-        from: setConnectedStatusProvider,
-        name: r'setConnectedStatusProvider',
-        debugGetCreateSourceHash:
-            const bool.fromEnvironment('dart.vm.product')
-                ? null
-                : _$setConnectedStatusHash,
-        dependencies: SetConnectedStatusFamily._dependencies,
-        allTransitiveDependencies:
-            SetConnectedStatusFamily._allTransitiveDependencies,
-        status: status,
-      );
+  SetConnectedStatusProvider({
+    required bool status,
+  }) : this._internal(
+          (ref) => setConnectedStatus(
+            ref as SetConnectedStatusRef,
+            status: status,
+          ),
+          from: setConnectedStatusProvider,
+          name: r'setConnectedStatusProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$setConnectedStatusHash,
+          dependencies: SetConnectedStatusFamily._dependencies,
+          allTransitiveDependencies:
+              SetConnectedStatusFamily._allTransitiveDependencies,
+          status: status,
+        );
 
   SetConnectedStatusProvider._internal(
     super._createNotifier, {
@@ -294,8 +310,7 @@ mixin SetConnectedStatusRef on AutoDisposeFutureProviderRef<void> {
 }
 
 class _SetConnectedStatusProviderElement
-    extends AutoDisposeFutureProviderElement<void>
-    with SetConnectedStatusRef {
+    extends AutoDisposeFutureProviderElement<void> with SetConnectedStatusRef {
   _SetConnectedStatusProviderElement(super.provider);
 
   @override
@@ -310,10 +325,9 @@ String _$getConnectedStatusHash() =>
 final getConnectedStatusProvider = AutoDisposeProvider<bool>.internal(
   getConnectedStatus,
   name: r'getConnectedStatusProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$getConnectedStatusHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$getConnectedStatusHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
@@ -333,15 +347,21 @@ class SetMainTokenIdFamily extends Family<AsyncValue<void>> {
   const SetMainTokenIdFamily();
 
   /// See also [setMainTokenId].
-  SetMainTokenIdProvider call({required String tokenId}) {
-    return SetMainTokenIdProvider(tokenId: tokenId);
+  SetMainTokenIdProvider call({
+    required String tokenId,
+  }) {
+    return SetMainTokenIdProvider(
+      tokenId: tokenId,
+    );
   }
 
   @override
   SetMainTokenIdProvider getProviderOverride(
     covariant SetMainTokenIdProvider provider,
   ) {
-    return call(tokenId: provider.tokenId);
+    return call(
+      tokenId: provider.tokenId,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -362,20 +382,24 @@ class SetMainTokenIdFamily extends Family<AsyncValue<void>> {
 /// See also [setMainTokenId].
 class SetMainTokenIdProvider extends AutoDisposeFutureProvider<void> {
   /// See also [setMainTokenId].
-  SetMainTokenIdProvider({required String tokenId})
-    : this._internal(
-        (ref) => setMainTokenId(ref as SetMainTokenIdRef, tokenId: tokenId),
-        from: setMainTokenIdProvider,
-        name: r'setMainTokenIdProvider',
-        debugGetCreateSourceHash:
-            const bool.fromEnvironment('dart.vm.product')
-                ? null
-                : _$setMainTokenIdHash,
-        dependencies: SetMainTokenIdFamily._dependencies,
-        allTransitiveDependencies:
-            SetMainTokenIdFamily._allTransitiveDependencies,
-        tokenId: tokenId,
-      );
+  SetMainTokenIdProvider({
+    required String tokenId,
+  }) : this._internal(
+          (ref) => setMainTokenId(
+            ref as SetMainTokenIdRef,
+            tokenId: tokenId,
+          ),
+          from: setMainTokenIdProvider,
+          name: r'setMainTokenIdProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$setMainTokenIdHash,
+          dependencies: SetMainTokenIdFamily._dependencies,
+          allTransitiveDependencies:
+              SetMainTokenIdFamily._allTransitiveDependencies,
+          tokenId: tokenId,
+        );
 
   SetMainTokenIdProvider._internal(
     super._createNotifier, {
@@ -434,8 +458,7 @@ mixin SetMainTokenIdRef on AutoDisposeFutureProviderRef<void> {
 }
 
 class _SetMainTokenIdProviderElement
-    extends AutoDisposeFutureProviderElement<void>
-    with SetMainTokenIdRef {
+    extends AutoDisposeFutureProviderElement<void> with SetMainTokenIdRef {
   _SetMainTokenIdProviderElement(super.provider);
 
   @override
@@ -449,10 +472,9 @@ String _$getMainTokenIdHash() => r'eef365bc48916b5bb25c833546248d82e1ca570d';
 final getMainTokenIdProvider = AutoDisposeProvider<String>.internal(
   getMainTokenId,
   name: r'getMainTokenIdProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$getMainTokenIdHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$getMainTokenIdHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
@@ -472,15 +494,21 @@ class SetTypeUserFamily extends Family<AsyncValue<void>> {
   const SetTypeUserFamily();
 
   /// See also [setTypeUser].
-  SetTypeUserProvider call({required String typeUser}) {
-    return SetTypeUserProvider(typeUser: typeUser);
+  SetTypeUserProvider call({
+    required String typeUser,
+  }) {
+    return SetTypeUserProvider(
+      typeUser: typeUser,
+    );
   }
 
   @override
   SetTypeUserProvider getProviderOverride(
     covariant SetTypeUserProvider provider,
   ) {
-    return call(typeUser: provider.typeUser);
+    return call(
+      typeUser: provider.typeUser,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -501,19 +529,24 @@ class SetTypeUserFamily extends Family<AsyncValue<void>> {
 /// See also [setTypeUser].
 class SetTypeUserProvider extends AutoDisposeFutureProvider<void> {
   /// See also [setTypeUser].
-  SetTypeUserProvider({required String typeUser})
-    : this._internal(
-        (ref) => setTypeUser(ref as SetTypeUserRef, typeUser: typeUser),
-        from: setTypeUserProvider,
-        name: r'setTypeUserProvider',
-        debugGetCreateSourceHash:
-            const bool.fromEnvironment('dart.vm.product')
-                ? null
-                : _$setTypeUserHash,
-        dependencies: SetTypeUserFamily._dependencies,
-        allTransitiveDependencies: SetTypeUserFamily._allTransitiveDependencies,
-        typeUser: typeUser,
-      );
+  SetTypeUserProvider({
+    required String typeUser,
+  }) : this._internal(
+          (ref) => setTypeUser(
+            ref as SetTypeUserRef,
+            typeUser: typeUser,
+          ),
+          from: setTypeUserProvider,
+          name: r'setTypeUserProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$setTypeUserHash,
+          dependencies: SetTypeUserFamily._dependencies,
+          allTransitiveDependencies:
+              SetTypeUserFamily._allTransitiveDependencies,
+          typeUser: typeUser,
+        );
 
   SetTypeUserProvider._internal(
     super._createNotifier, {
@@ -607,15 +640,21 @@ class SetGeneratedCodeFamily extends Family<AsyncValue<void>> {
   const SetGeneratedCodeFamily();
 
   /// See also [setGeneratedCode].
-  SetGeneratedCodeProvider call({required String generatedCode}) {
-    return SetGeneratedCodeProvider(generatedCode: generatedCode);
+  SetGeneratedCodeProvider call({
+    required String generatedCode,
+  }) {
+    return SetGeneratedCodeProvider(
+      generatedCode: generatedCode,
+    );
   }
 
   @override
   SetGeneratedCodeProvider getProviderOverride(
     covariant SetGeneratedCodeProvider provider,
   ) {
-    return call(generatedCode: provider.generatedCode);
+    return call(
+      generatedCode: provider.generatedCode,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -636,23 +675,24 @@ class SetGeneratedCodeFamily extends Family<AsyncValue<void>> {
 /// See also [setGeneratedCode].
 class SetGeneratedCodeProvider extends AutoDisposeFutureProvider<void> {
   /// See also [setGeneratedCode].
-  SetGeneratedCodeProvider({required String generatedCode})
-    : this._internal(
-        (ref) => setGeneratedCode(
-          ref as SetGeneratedCodeRef,
+  SetGeneratedCodeProvider({
+    required String generatedCode,
+  }) : this._internal(
+          (ref) => setGeneratedCode(
+            ref as SetGeneratedCodeRef,
+            generatedCode: generatedCode,
+          ),
+          from: setGeneratedCodeProvider,
+          name: r'setGeneratedCodeProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$setGeneratedCodeHash,
+          dependencies: SetGeneratedCodeFamily._dependencies,
+          allTransitiveDependencies:
+              SetGeneratedCodeFamily._allTransitiveDependencies,
           generatedCode: generatedCode,
-        ),
-        from: setGeneratedCodeProvider,
-        name: r'setGeneratedCodeProvider',
-        debugGetCreateSourceHash:
-            const bool.fromEnvironment('dart.vm.product')
-                ? null
-                : _$setGeneratedCodeHash,
-        dependencies: SetGeneratedCodeFamily._dependencies,
-        allTransitiveDependencies:
-            SetGeneratedCodeFamily._allTransitiveDependencies,
-        generatedCode: generatedCode,
-      );
+        );
 
   SetGeneratedCodeProvider._internal(
     super._createNotifier, {
@@ -712,8 +752,7 @@ mixin SetGeneratedCodeRef on AutoDisposeFutureProviderRef<void> {
 }
 
 class _SetGeneratedCodeProviderElement
-    extends AutoDisposeFutureProviderElement<void>
-    with SetGeneratedCodeRef {
+    extends AutoDisposeFutureProviderElement<void> with SetGeneratedCodeRef {
   _SetGeneratedCodeProviderElement(super.provider);
 
   @override
@@ -728,10 +767,9 @@ String _$getGeneratedCodeHash() => r'895f779e868f802eeff5fe92eb86f5b773f1c8d1';
 final getGeneratedCodeProvider = AutoDisposeProvider<String>.internal(
   getGeneratedCode,
   name: r'getGeneratedCodeProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$getGeneratedCodeHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$getGeneratedCodeHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
