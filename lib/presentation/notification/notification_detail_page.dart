@@ -18,7 +18,7 @@ class NotificationDetailPage extends ConsumerStatefulWidget {
 
 class _NotificationDetailPageState extends ConsumerState<NotificationDetailPage> {
   late Stream<List<NotificationModel>> _notificationsStream;
-  String myType = "";
+  String myType = '';
   final ScrollController _scrollController = ScrollController();
   bool _showScrollToBottom = false;
   bool _initialScrollDone = false;
@@ -80,11 +80,11 @@ class _NotificationDetailPageState extends ConsumerState<NotificationDetailPage>
         margin: const EdgeInsets.symmetric(vertical: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -131,8 +131,8 @@ class _NotificationDetailPageState extends ConsumerState<NotificationDetailPage>
               child: Ink(
                 decoration: BoxDecoration(
                   color: isSentByMe 
-                      ? theme.colorScheme.primary.withOpacity(0.9)
-                      : theme.colorScheme.surfaceVariant,
+                      ? theme.colorScheme.primary.withValues(alpha: 0.9)
+                      : theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(20),
                     topRight: const Radius.circular(20),
@@ -141,7 +141,7 @@ class _NotificationDetailPageState extends ConsumerState<NotificationDetailPage>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -183,7 +183,7 @@ class _NotificationDetailPageState extends ConsumerState<NotificationDetailPage>
                             style: TextStyle(
                               fontSize: 15,
                               color: isSentByMe 
-                                  ? Colors.white.withOpacity(0.9)
+                                  ? Colors.white.withValues(alpha: 0.9)
                                   : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
@@ -196,8 +196,8 @@ class _NotificationDetailPageState extends ConsumerState<NotificationDetailPage>
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: isSentByMe 
-                                      ? Colors.white.withOpacity(0.7)
-                                      : theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                      ? Colors.white.withValues(alpha: 0.7)
+                                      : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                                 ),
                               ),
                               const SizedBox(width: 4),
@@ -205,8 +205,8 @@ class _NotificationDetailPageState extends ConsumerState<NotificationDetailPage>
                                 isSentByMe ? Icons.north_east : Icons.south_west,
                                 size: 14,
                                 color: isSentByMe 
-                                    ? Colors.white.withOpacity(0.7)
-                                    : theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                    ? Colors.white.withValues(alpha: 0.7)
+                                    : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                               ),
                             ],
                           ),
@@ -235,7 +235,7 @@ class _NotificationDetailPageState extends ConsumerState<NotificationDetailPage>
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: false,
-        backgroundColor: theme.colorScheme.surface.withOpacity(0.7),
+        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.7),
         flexibleSpace: ClipRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -260,7 +260,7 @@ class _NotificationDetailPageState extends ConsumerState<NotificationDetailPage>
             end: Alignment.bottomCenter,
             colors: [
               theme.colorScheme.surface,
-              theme.colorScheme.surface.withOpacity(0.95),
+              theme.colorScheme.surface.withValues(alpha: 0.95),
             ],
           ),
         ),

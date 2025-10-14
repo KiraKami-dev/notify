@@ -47,8 +47,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   bool _isLoading = false;
   // String? _partnerStatus;
   String? _partnerToken;
-  String generatedCode = "";
-  String myType = "";
+  String generatedCode = '';
+  String myType = '';
   int _currentImageIndex = 0;
   StickerViewType _currentViewType = StickerViewType.all;
   bool connectedStatus = false;
@@ -94,13 +94,13 @@ class _HomePageState extends ConsumerState<HomePage> {
         } else {
           setState(() {
             connectedStatus = false;
-            generatedCode = "";
+            generatedCode = '';
           });
         }
       } else {
         setState(() {
           connectedStatus = false;
-          generatedCode = "";
+          generatedCode = '';
         });
       }
 
@@ -111,7 +111,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           typeUser: myType,
         );
         AppLogger.debug('Partner token: $partnerToken');
-        if (partnerToken != null && partnerToken.isNotEmpty) {
+        if (partnerToken!.isNotEmpty) {
           setState(() {
             _partnerToken = partnerToken;
           });
@@ -408,7 +408,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                         showSelectedIcon: false,
                                         style: ButtonStyle(
                                           visualDensity: VisualDensity.compact,
-                                          padding: MaterialStateProperty.all(
+                                          padding: WidgetStateProperty.all(
                                             const EdgeInsets.symmetric(
                                               horizontal: 8,
                                               vertical: 0,
@@ -470,7 +470,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                 color: theme
                                                                     .colorScheme
                                                                     .surface
-                                                                    .withOpacity(
+                                                                    .withValues(alpha: 
                                                                   0.8,
                                                                 ),
                                                                 borderRadius:
@@ -541,7 +541,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                         size: 48,
                                                         color: theme.colorScheme
                                                             .onSurfaceVariant
-                                                            .withOpacity(0.5),
+                                                            .withValues(alpha: 0.5),
                                                       ),
                                                       const SizedBox(height: 8),
                                                       Text(
@@ -552,7 +552,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                           color: theme
                                                               .colorScheme
                                                               .onSurfaceVariant
-                                                              .withOpacity(
+                                                              .withValues(alpha: 
                                                             0.7,
                                                           ),
                                                         ),
@@ -606,7 +606,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                     color: theme
                                                                         .colorScheme
                                                                         .surface
-                                                                        .withOpacity(
+                                                                        .withValues(alpha: 
                                                                       0.8,
                                                                     ),
                                                                     borderRadius:
@@ -720,7 +720,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                                 color: theme
                                                                     .colorScheme
                                                                     .surface
-                                                                    .withOpacity(
+                                                                    .withValues(alpha: 
                                                                   0.8,
                                                                 ),
                                                                 borderRadius:
@@ -893,7 +893,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                         margin: const EdgeInsets.only(left: 8),
                                         decoration: BoxDecoration(
                                           color: theme.colorScheme.primary
-                                              .withOpacity(0.8),
+                                              .withValues(alpha: 0.8),
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
@@ -1118,11 +1118,13 @@ class _HomePageState extends ConsumerState<HomePage> {
       // Reset local state
       setState(() {
         connectedStatus = false;
-        generatedCode = "";
-        myType = "";
+        generatedCode = '';
+        myType = '';
         _partnerToken = null;
         // _partnerStatus = null;
-        stickerItems.forEach((sticker) => sticker.isFavorite = false);
+        for (var sticker in stickerItems) {
+          sticker.isFavorite = false;
+        }
       });
 
       if (mounted) {
@@ -1208,7 +1210,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
+                                    color: Colors.black.withValues(alpha: 0.2),
                                     blurRadius: 12,
                                     spreadRadius: 2,
                                   ),
@@ -1256,7 +1258,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
+                                      color: Colors.black.withValues(alpha: 0.2),
                                       blurRadius: 8,
                                       spreadRadius: 1,
                                     ),
@@ -1297,7 +1299,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -1310,7 +1312,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                             'How\'s your heart feeling?',
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
-                                          color: Colors.white.withOpacity(0.9),
+                                          color: Colors.white.withValues(alpha: 0.9),
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),

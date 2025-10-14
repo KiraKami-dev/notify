@@ -20,7 +20,7 @@ class CustomStickerView extends StatelessWidget {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(20),
             ),
             child: IconButton(
@@ -43,7 +43,7 @@ class CustomStickerView extends StatelessWidget {
           Text(
             'Tap to create your own sticker',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
           ),
         ],

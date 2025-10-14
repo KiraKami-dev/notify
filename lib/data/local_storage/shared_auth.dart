@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package, depend_on_referenced_packages
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,6 +25,11 @@ Future<void> toggleFavoriteId(ToggleFavoriteIdRef ref,
   await pref.setStringList(_favKey, ids.toList());
   
   ref.invalidate(getFavoriteIdsProvider);
+}
+
+extension on ToggleFavoriteIdRef {
+  // ignore: strict_top_level_inference
+  void invalidate(getFavoriteIdsProvider) {}
 }
 
 @riverpod

@@ -21,7 +21,7 @@ class _LatestNotificationsWidgetState
     extends ConsumerState<LatestNotificationsWidget> {
   List<NotificationModel> oldNotifications = [];
   Stream<List<NotificationModel>>? _notificationsStream;
-  String myType = "";
+  String myType = '';
 
   @override
   void initState() {
@@ -109,7 +109,7 @@ class _LatestNotificationsWidgetState
                     width: 75,
                     height: double.infinity,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: const BorderRadius.horizontal(
                         left: Radius.circular(12),
                       ),
@@ -186,7 +186,7 @@ class _LatestNotificationsWidgetState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -249,7 +249,7 @@ class _LatestNotificationsWidgetState
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),

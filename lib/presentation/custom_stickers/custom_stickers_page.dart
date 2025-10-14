@@ -96,7 +96,7 @@ class _CustomStickersPageState extends ConsumerState<CustomStickersPage> {
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         ),
       ),
     );

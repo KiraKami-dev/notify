@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:notify/data/firebase/firebase_stickers.dart';
 import 'package:notify/domain/sticker_model.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -140,7 +139,6 @@ class _EditStickerDialogState extends State<EditStickerDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -173,7 +171,7 @@ class _EditStickerDialogState extends State<EditStickerDialog> {
                   width: double.infinity,
                   height: 200,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                     image: DecorationImage(
                       image: _selectedImage != null
@@ -187,7 +185,7 @@ class _EditStickerDialogState extends State<EditStickerDialog> {
                     children: [
                       if (_selectedImage == null)
                         Container(
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black.withValues(alpha: 0.3),
                           child: Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,

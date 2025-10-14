@@ -6,14 +6,15 @@ import 'package:flutter/services.dart';
 import 'package:notify/data/firebase/firebase_connect.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
+import 'package:riverpod/src/framework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:notify/core/services/logger.dart';
 
 class UserConnectionModal extends ConsumerStatefulWidget {
   const UserConnectionModal({
-    Key? key,
+    super.key,
     required this.fetch,        
-  }) : super(key: key);
+  });
 
   final VoidCallback fetch;      
 
@@ -78,22 +79,22 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
           
           try {
             // Show success message and update state
-            ref.read(setGeneratedCodeProvider(generatedCode: codeToListen));
-            ref.read(setConnectedStatusProvider(status: true));
+            ref.read(setGeneratedCodeProvider(generatedCode: codeToListen) as ProviderListenable);
+            ref.read(setConnectedStatusProvider(status: true) as ProviderListenable);
             
             final isMainUser = _activeTab == 1;
             
             if (isMainUser) {
               // Update timestamp only once for main user
               await FirebaseConnect.usersCollection.doc(codeToListen).update({
-                "main_last_timestamp": Timestamp.now(),
+                'main_last_timestamp': Timestamp.now(),
               });
             }
 
             ref.read(
               setTypeUserProvider(
                 typeUser: isMainUser ? 'main' : 'secondary',
-              ),
+              ) as ProviderListenable,
             );
             
             if (mounted) {
@@ -201,7 +202,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant.withOpacity(0.5),
+                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Row(
@@ -225,7 +226,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                                 _activeTab == 0
                                     ? [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
+                                        color: Colors.black.withValues(alpha: 0.1),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       ),
@@ -271,7 +272,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                                 _activeTab == 1
                                     ? [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
+                                        color: Colors.black.withValues(alpha: 0.1),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       ),
@@ -322,7 +323,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                   color: colorScheme.surface,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, -5),
                     ),
@@ -367,8 +368,8 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                               _activeTab == 1 &&
                                       !_timeLeft.isNegative &&
                                       _generatedCode != '--- ---'
-                                  ? colorScheme.primary.withOpacity(0.6)
-                                  : colorScheme.surfaceVariant,
+                                  ? colorScheme.primary.withValues(alpha: 0.6)
+                                  : colorScheme.surfaceContainerHighest,
                         ),
                         child:
                             _isLoading || _shareLoading
@@ -466,7 +467,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -479,7 +480,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                   border: InputBorder.none,
                   hintText: 'Enter 6-digit code',
                   hintStyle: TextStyle(
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(Icons.paste, color: colorScheme.primary),
@@ -524,7 +525,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withOpacity(0.3),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -633,7 +634,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
 
         if (storedToken != null && storedToken.isNotEmpty) {
           // Update the provider with the stored token
-          ref.read(setMainTokenIdProvider(tokenId: storedToken));
+          ref.read(setMainTokenIdProvider(tokenId: storedToken) as ProviderListenable);
           AppLogger.info('Updated provider with stored token');
           
           // Now try to generate the code with the stored token
@@ -761,7 +762,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -846,7 +847,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -890,7 +891,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                   ),
                   Switch(
                     value: _isSecureConnection,
-                    activeColor: colorScheme.primary,
+                    activeThumbColor: colorScheme.primary,
                     onChanged: (value) {
                       setState(() {
                         _isSecureConnection = value;
@@ -919,7 +920,7 @@ class _UserConnectionModalState extends ConsumerState<UserConnectionModal>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),

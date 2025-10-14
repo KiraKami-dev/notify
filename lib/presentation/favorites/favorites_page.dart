@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:notify/data/firebase/firebase_stickers.dart';
 import 'package:notify/data/firebase/firebase_favorites.dart';
 import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/data/providers/favorite_provider.dart';
@@ -89,7 +88,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         ),
       ),
     );

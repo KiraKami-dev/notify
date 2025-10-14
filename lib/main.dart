@@ -9,6 +9,7 @@ import 'package:notify/config/firebase_options.dart';
 import 'dart:async';
 import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/presentation/main/home_page.dart';
+import 'package:riverpod/src/framework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Firebase Cloud Function URL
@@ -104,7 +105,7 @@ class _NotifyAppState extends ConsumerState<NotifyApp> {
         // Update both SharedPreferences and provider
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('mainTokenId', token);
-        ref.read(setMainTokenIdProvider(tokenId: token));
+        ref.read(setMainTokenIdProvider(tokenId: token) as ProviderListenable);
         AppLogger.info('Token updated in both SharedPreferences and provider');
       } else {
         AppLogger.warn('Firebase token is null during reinitialization');

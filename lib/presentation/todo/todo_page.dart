@@ -6,7 +6,6 @@ import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/models/todo_item.dart';
 import 'package:notify/data/firebase/firebase_todo.dart';
 import 'package:notify/data/local_notification/notification_service.dart';
-import 'package:notify/data/local_storage/shared_auth.dart';
 import 'package:notify/presentation/widgets/connection_dialog.dart';
 
 class TodoPage extends ConsumerStatefulWidget {
@@ -47,10 +46,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
         typeUser: myType,
       );
 
-      if (partnerToken != null) {
-        otherTokenId = partnerToken;
-      }
-    }
+      otherTokenId = partnerToken!;
+        }
   }
 
   @override
@@ -467,8 +464,8 @@ class _TodoPageState extends ConsumerState<TodoPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.05),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.05),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+              Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
             ],
           ),
         ),
@@ -537,7 +534,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                             Icon(
                               Icons.note_add_rounded,
                               size: 64,
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -661,7 +658,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Padding(
@@ -709,7 +706,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Theme(
@@ -746,7 +743,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                     const SizedBox(width: 4),
                     Text(
                       todo.isRecurring
-                          ? '${DateFormat('MMM d, y h:mm a').format(todo.dueDate!)}'
+                          ? DateFormat('MMM d, y h:mm a').format(todo.dueDate!)
                           : DateFormat('MMM d, y h:mm a').format(todo.dueDate!),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.primary,
@@ -759,7 +756,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
                 const SizedBox(height: 4),
                 LinearProgressIndicator(
                   value: todo.progress,
-                  backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ],

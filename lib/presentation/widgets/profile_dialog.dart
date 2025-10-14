@@ -164,18 +164,18 @@ class _ProfileDialogState extends State<ProfileDialog>
             end: Alignment.bottomRight,
             colors: [
               theme.colorScheme.surface,
-              theme.colorScheme.surface.withOpacity(0.95),
+              theme.colorScheme.surface.withValues(alpha: 0.95),
             ],
           ),
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.primary.withOpacity(0.15),
+              color: theme.colorScheme.primary.withValues(alpha: 0.15),
               blurRadius: 30,
               spreadRadius: 0,
               offset: const Offset(0, 10),
             ),
             BoxShadow(
-              color: theme.colorScheme.secondary.withOpacity(0.1),
+              color: theme.colorScheme.secondary.withValues(alpha: 0.1),
               blurRadius: 20,
               spreadRadius: 0,
               offset: const Offset(0, 5),
@@ -217,15 +217,15 @@ class _ProfileDialogState extends State<ProfileDialog>
                                   'Share your mood with your partner',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant
-                                        .withOpacity(0.7),
+                                        .withValues(alpha: 0.7),
                                   ),
                                 ),
                               ],
                             ),
                             Container(
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceVariant
-                                    .withOpacity(0.5),
+                                color: theme.colorScheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.5),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: IconButton(
@@ -261,15 +261,15 @@ class _ProfileDialogState extends State<ProfileDialog>
                                           end: Alignment.bottomRight,
                                           colors: [
                                             theme.colorScheme.primary
-                                                .withOpacity(0.1),
+                                                .withValues(alpha: 0.1),
                                             theme.colorScheme.secondary
-                                                .withOpacity(0.1),
+                                                .withValues(alpha: 0.1),
                                           ],
                                         ),
                                         boxShadow: [
                                           BoxShadow(
                                             color: theme.colorScheme.primary
-                                                .withOpacity(0.2),
+                                                .withValues(alpha: 0.2),
                                             blurRadius: 20,
                                             spreadRadius: 0,
                                             offset: const Offset(0, 8),
@@ -301,10 +301,10 @@ class _ProfileDialogState extends State<ProfileDialog>
                                                     end: Alignment.bottomRight,
                                                     colors: [
                                                       theme.colorScheme.primary
-                                                          .withOpacity(0.1),
+                                                          .withValues(alpha: 0.1),
                                                       theme
                                                           .colorScheme.secondary
-                                                          .withOpacity(0.1),
+                                                          .withValues(alpha: 0.1),
                                                     ],
                                                   ),
                                                 ),
@@ -313,7 +313,7 @@ class _ProfileDialogState extends State<ProfileDialog>
                                                   size: 70,
                                                   color: theme
                                                       .colorScheme.primary
-                                                      .withOpacity(0.6),
+                                                      .withValues(alpha: 0.6),
                                                 ),
                                               )
                                             : null,
@@ -330,7 +330,7 @@ class _ProfileDialogState extends State<ProfileDialog>
                                           boxShadow: [
                                             BoxShadow(
                                               color: theme.colorScheme.primary
-                                                  .withOpacity(0.4),
+                                                  .withValues(alpha: 0.4),
                                               blurRadius: 12,
                                               spreadRadius: 0,
                                               offset: const Offset(0, 4),
@@ -352,7 +352,7 @@ class _ProfileDialogState extends State<ProfileDialog>
                                 'Tap to change photo',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant
-                                      .withOpacity(0.6),
+                                      .withValues(alpha: 0.6),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -379,16 +379,16 @@ class _ProfileDialogState extends State<ProfileDialog>
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    theme.colorScheme.surfaceVariant
-                                        .withOpacity(0.3),
-                                    theme.colorScheme.surfaceVariant
-                                        .withOpacity(0.1),
+                                    theme.colorScheme.surfaceContainerHighest
+                                        .withValues(alpha: 0.3),
+                                    theme.colorScheme.surfaceContainerHighest
+                                        .withValues(alpha: 0.1),
                                   ],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: theme.colorScheme.primary
-                                        .withOpacity(0.08),
+                                        .withValues(alpha: 0.08),
                                     blurRadius: 15,
                                     spreadRadius: 0,
                                     offset: const Offset(0, 5),
@@ -407,7 +407,7 @@ class _ProfileDialogState extends State<ProfileDialog>
                                   hintStyle:
                                       theme.textTheme.bodyLarge?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant
-                                        .withOpacity(0.6),
+                                        .withValues(alpha: 0.6),
                                     height: 1.4,
                                   ),
                                   prefixIcon: Container(
@@ -415,7 +415,7 @@ class _ProfileDialogState extends State<ProfileDialog>
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: theme.colorScheme.primary
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(
@@ -451,7 +451,7 @@ class _ProfileDialogState extends State<ProfileDialog>
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
                                     color: theme.colorScheme.outline
-                                        .withOpacity(0.3),
+                                        .withValues(alpha: 0.3),
                                     width: 1.5,
                                   ),
                                 ),
@@ -494,7 +494,7 @@ class _ProfileDialogState extends State<ProfileDialog>
                                   boxShadow: [
                                     BoxShadow(
                                       color: theme.colorScheme.primary
-                                          .withOpacity(0.3),
+                                          .withValues(alpha: 0.3),
                                       blurRadius: 12,
                                       spreadRadius: 0,
                                       offset: const Offset(0, 4),

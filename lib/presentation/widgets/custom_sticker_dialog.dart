@@ -137,7 +137,7 @@ class _CustomStickerDialogState extends State<CustomStickerDialog> {
                 height: isKeyboardVisible ? 80 : 180,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: _selectedImage != null
@@ -151,13 +151,13 @@ class _CustomStickerDialogState extends State<CustomStickerDialog> {
                           Icon(
                             Icons.image_rounded,
                             size: isKeyboardVisible ? 24 : 40,
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'No image selected',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
