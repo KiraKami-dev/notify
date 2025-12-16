@@ -37,7 +37,7 @@ A Flutter-based mobile application that enables users to connect with each other
 
 | Share Code                                                                                 | Enter Code                                                                                |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| ![](![Screenshot_2025![Screenshot_2025-12-17-00-38-04-78_44288c2def5db31ce78aeba96ead663b](https://github.com/user-attachments/assets/6702869d-6aaa-4494-a537-562c88be52b0)) | ![](https://github.com/user-attachments/assets/80199fcc-9d10-4b2c-aaf8-9c5209dbdf15) |
+| ![](https://github.com/user-attachments/assets/6702869d-6aaa-4494-a537-562c88be52b0) | ![](https://github.com/user-attachments/assets/80199fcc-9d10-4b2c-aaf8-9c5209dbdf15) |
 
 | Collection                                                                            | Favourite                                                                              |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
