@@ -23,22 +23,12 @@ void main() async {
     FlutterError.presentError(details);
   };
 
-  // Zone-level error handling for uncaught async errors
   await runZonedGuarded<Future<void>>(() async {
     try {
-      AppLogger.info('Initializing Firebase...');
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-      AppLogger.info('Firebase initialized');
 
-      AppLogger.info('Initializing notification service...');
       await NotificationService.init();
-      AppLogger.info('Notification service initialized');
-
-      AppLogger.info('Initializing shared preferences...');
       await SharedPrefs().init();
-      AppLogger.info('Shared preferences initialized');
-
-      AppLogger.info('Setting up Firebase Messaging...');
       final messaging = FirebaseMessaging.instance;
     
     // Request notification permissions first
@@ -48,14 +38,11 @@ void main() async {
       sound: true,
       provisional: false,
     );
-    AppLogger.info('Notification permission status: ${settings.authorizationStatus}');
 
     // Get the token
     final token = await messaging.getToken();
-    AppLogger.debug('Firebase Messaging token: $token');
 
     if (token != null) {
-      // Save token to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('mainTokenId', token);
       AppLogger.info('Token saved to SharedPreferences');
