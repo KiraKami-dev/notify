@@ -34,16 +34,10 @@ A Flutter-based mobile application that enables users to connect with each other
 - **Mood Status**: Set and update your current mood/status
 
 ## Screen Shots
-![Screenshot_2025![Screenshot_2025-12-17-00-38-04-78_44288c2def5db31ce78aeba96ead663b](https://github.com/user-attachments/assets/6702869d-6aaa-4494-a537-562c88be52b0)
--12-17-00-37-55-67_44288c2def5db31ce78aeba96ead663b](https://github.com/user-attachments/assets/80199fcc-9d10-4b2c-aaf8-9c5209dbdf15)
-
-![Screenshot_2025-12-17-00-30-26-27_44288c2def5db31ce78aeba96ead663b](https://github.com/user-attachments/assets/fabc030c-cce7-4c56-b413-7577874d34b5)
-![Screenshot_2025-12-17-00-36-56-25_44288c2def5db31ce78aeba96ead663b](https://github.com/user-attachments/assets/a9d6a5c0-920a-4274-b8ad-33bba48416d9)
-![Screenshot_2025-12-17-00-37-37-54_44288c2def5db31ce78aeba96ead663b](https://github.com/user-attachments/assets/cbd7e2ef-7208-4dd6-8f7e-e94421d97e6e)
 
 | Share Code                                                                                 | Enter Code                                                                                |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| ![]([https://github.com/user-attachments/assets/6702869d-6aaa-4494-a537-562c88be52b0](https://github.com/user-attachments/assets/6702869d-6aaa-4494-a537-562c88be52b0)) | ![](https://github.com/user-attachments/assets/80199fcc-9d10-4b2c-aaf8-9c5209dbdf15) |
+| ![]([https://github.com/user-attachments/assets/6702869d-6aaa-4494-a537-562c88be52b0]) | ![](https://github.com/user-attachments/assets/80199fcc-9d10-4b2c-aaf8-9c5209dbdf15) |
 
 | Collection                                                                            | Favourite                                                                              |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
