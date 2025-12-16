@@ -43,11 +43,6 @@ A Flutter-based mobile application that enables users to connect with each other
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | ![](https://github.com/user-attachments/assets/fabc030c-cce7-4c56-b413-7577874d34b5) | ![](https://github.com/user-attachments/assets/a9d6a5c0-920a-4274-b8ad-33bba48416d9) |
 
-| Settings                                                                             |
-| ------------------------------------------------------------------------------------ |
-| ![](https://github.com/user-attachments/assets/cbd7e2ef-7208-4dd6-8f7e-e94421d97e6e) |
-
-
 ## Tech Stack
 
 ### Frontend
