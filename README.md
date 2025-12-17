@@ -1,6 +1,6 @@
 # Notify
 
-A Flutter-based mobile application that enables users to connect with each other and send personalized notifications with stickers. The app features a connection system, sticker collections, custom sticker creation, todo management, and real-time notifications powered by Firebase.
+A Flutter-based mobile application that enables couples/friend (2 people) to connect with each other and send personalized notifications with stickers. The app features a connection system, sticker collections, custom sticker creation, todo management, and real-time notifications powered by Firebase.
 
 ## Features
 
